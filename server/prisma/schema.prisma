@@ -1,0 +1,149 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id          String   @id @default(uuid())
+  email       String   @unique
+  password    String
+  name        String
+  role        String   @default("JUDGE") // JUDGE, LAWYER, COURT_STAFF, CITIZEN, ADMIN
+  designation String
+  court       String
+  officialId  String?  // Bar Council ID, Judicial Service ID, or Staff Employee ID
+  status      String   @default("APPROVED") // APPROVED, PENDING_ADMIN_APPROVAL, REJECTED
+  avatar      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  casesJudged Case[]         @relation("JudgeCases")
+  casesLawyer Case[]         @relation("LawyerCases")
+  documents   Document[]
+  notifs      Notification[]
+  auditLogs   AuditLog[]
+  draftsSigned DraftOrder[]  @relation("SignedBy")
+}
+
+model Case {
+  id               String   @id @default(uuid())
+  caseNumber       String   @unique
+  title            String
+  description      String
+  status           String   @default("Pending") // Pending, Active, Closed, Adjourned, Reserved
+  priority         String   @default("Medium") // High, Medium, Low
+  division         String   @default("Criminal") // Criminal, Civil, Constitutional, Family, Commercial
+  petitioner       String
+  respondent       String
+  filingDate       String
+  nextHearing      String
+  court            String
+  type             String
+  delayProbability Float?   @default(0.0)
+  
+  judgeId          String?
+  judge            User?    @relation("JudgeCases", fields: [judgeId], references: [id])
+  
+  lawyerId         String?
+  lawyer           User?    @relation("LawyerCases", fields: [lawyerId], references: [id])
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  hearings         Hearing[]
+  documents        Document[]
+  evidences        Evidence[]
+  draftOrders      DraftOrder[]
+  aiAnalysis       AiAnalysis?
+}
+
+model Hearing {
+  id            String   @id @default(uuid())
+  caseId        String
+  case          Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  time          String
+  courtRoom     String
+  status        String   @default("Scheduled") // Scheduled, In Progress, Completed, Postponed
+  type          String   @default("Hearing")
+  date          String
+  suggestedByAi Boolean  @default(false)
+  aiRationale   String?
+  createdAt     DateTime @default(now())
+}
+
+model Document {
+  id         String   @id @default(uuid())
+  caseId     String?
+  case       Case?    @relation(fields: [caseId], references: [id], onDelete: SetNull)
+  fileName   String
+  filePath   String
+  fileSize   Int
+  mimeType   String
+  uploadedBy String
+  uploader   User     @relation(fields: [uploadedBy], references: [id], onDelete: Cascade)
+  uploadedAt DateTime @default(now())
+}
+
+model Evidence {
+  id         String   @id @default(uuid())
+  caseId     String
+  case       Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  fileName   String
+  fileType   String
+  category   String   @default("Documentary") // Forensic, Documentary, Audio/Visual, Physical
+  aiTags     String   // JSON string of AI tags
+  uploadedAt DateTime @default(now())
+}
+
+model DraftOrder {
+  id         String    @id @default(uuid())
+  caseId     String
+  case       Case      @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  docType    String    @default("Order") // Order, Notice, Summons, Bail Order
+  title      String
+  content    String
+  status     String    @default("DRAFT") // DRAFT, APPROVED, REJECTED
+  signedById String?
+  signedBy   User?     @relation("SignedBy", fields: [signedById], references: [id])
+  signedAt   DateTime?
+  createdAt  DateTime  @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  actorId   String
+  actor     User     @relation(fields: [actorId], references: [id], onDelete: Cascade)
+  actorRole String
+  action    String
+  input     String
+  output    String
+  sources   String?  // JSON string or comma-separated citations
+  outcome   String   @default("REVIEWED_HUMAN")
+  createdAt DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String   @default("info") // info, warning, success, alert
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model AiAnalysis {
+  id              String   @id @default(uuid())
+  caseId          String   @unique
+  case            Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  keyFindings     String   // JSON string of findings
+  legalPrecedents String   // JSON string of precedents
+  riskLevel       String   @default("Medium")
+  recommendations String   // JSON string of recommendations
+  createdAt       DateTime @default(now())
+}
