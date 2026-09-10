@@ -76,6 +76,47 @@ def execute_deep_legal_research(
 
     # Step 5: Format Evidence Text for LLM Synthesis
     all_chunks = retrieval_results.get("all_ranked_chunks", [])
+    
+    # Check statutory knowledge base
+    from rag.statutory_kb import lookup_statutory_provision, format_statutory_research_report
+    stat_kb_data = lookup_statutory_provision(q_clean)
+    
+    # If statutory KB data found, inject it as high-authority evidence chunks
+    if stat_kb_data:
+        for idx, prec in enumerate(stat_kb_data.get("landmark_precedents", []), 1):
+            all_chunks.append({
+                "chunk_id": f"stat_prec_{idx}",
+                "title": f"{prec['case_name']} ({prec['citation']})",
+                "document_id": f"prec_doc_{idx}",
+                "case_name": prec["case_name"],
+                "court": prec["court"],
+                "year": 2024,
+                "act": stat_kb_data["act"],
+                "section": stat_kb_data["section"],
+                "citation": prec["citation"],
+                "authority_level": 1,
+                "relevance_score": 0.95,
+                "excerpt": f"Held: {prec['held']} | Evidentiary Requirement: {prec['evidence_points']}",
+                "source_url": "https://judgments.ecourts.gov.in",
+                "currentness": "VERIFIED"
+            })
+        all_chunks.append({
+            "chunk_id": "stat_text_main",
+            "title": f"{stat_kb_data['act']} - {stat_kb_data['section']}",
+            "document_id": "statute_official_doc",
+            "case_name": stat_kb_data["title"],
+            "court": "Parliament of India / Constituent Assembly",
+            "year": 2024,
+            "act": stat_kb_data["act"],
+            "section": stat_kb_data["section"],
+            "citation": f"Official Gazette / Constitutional Text",
+            "authority_level": 1,
+            "relevance_score": 0.98,
+            "excerpt": f"Statutory Text: {stat_kb_data['statutory_text']} | Evidentiary Standard: {stat_kb_data.get('evidentiary_requirements', '')}",
+            "source_url": "https://indiacode.nic.in",
+            "currentness": "VERIFIED"
+        })
+
     evidence_text = format_evidence_sources(all_chunks) if all_chunks else "No matching evidence chunks retrieved from vector store."
 
     # Step 6: LLM Multi-Authority IRAC Synthesis
@@ -91,7 +132,9 @@ def execute_deep_legal_research(
 
     # Step 7: Fallback Synthesis if LLM returns empty or offline
     if not raw_answer:
-        if all_chunks:
+        if stat_kb_data:
+            raw_answer = format_statutory_research_report(stat_kb_data, q_clean)
+        elif all_chunks:
             top_src = all_chunks[0]
             raw_answer = (
                 f"### APPLICABLE STATUTORY LAW & PRECEDENT\n\n"

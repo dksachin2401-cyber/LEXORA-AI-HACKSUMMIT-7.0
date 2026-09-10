@@ -23,15 +23,25 @@ except Exception:
 
 SHORT_DOC_THRESHOLD = 6000  # Characters (~1,500 tokens). Long docs > 6000 trigger Map-Reduce.
 
-def call_llm(prompt: str, temperature: float = 0.0, max_tokens: int = 350) -> Optional[str]:
+def call_llm(prompt: str, temperature: float = 0.0, max_tokens: int = 350, provider: Optional[str] = None) -> Optional[str]:
     """
     Executes LLM request via OpenAI (gpt-4o-mini) or Gemini 1.5 Flash, with zero-temperature determinism.
-    Honors LLM_PROVIDER environment variable ('openai' or 'gemini').
+    Honors provider parameter or LLM_PROVIDER environment variable ('openai' or 'gemini').
     """
-    provider = os.getenv("LLM_PROVIDER", "").lower()
+    prov = (provider or os.getenv("LLM_PROVIDER", "")).lower().strip()
 
     # 1. Specified provider preference
-    if provider in ["openai", "gpt"] and openai_client:
+    if prov in ["gemini", "google"] and gemini_model:
+        try:
+            response = gemini_model.generate_content(
+                prompt,
+                generation_config={"temperature": temperature, "max_output_tokens": max_tokens}
+            )
+            return response.text.strip()
+        except Exception as e:
+            print(f"[LLM] Specified Gemini call failed: {e}")
+
+    if prov in ["openai", "gpt", "gpt-4o", "gpt-4o-mini"] and openai_client:
         try:
             response = openai_client.chat.completions.create(
                 model="gpt-4o-mini",
@@ -42,16 +52,6 @@ def call_llm(prompt: str, temperature: float = 0.0, max_tokens: int = 350) -> Op
             return response.choices[0].message.content.strip()
         except Exception as e:
             print(f"[LLM] Specified OpenAI call failed: {e}")
-
-    if provider in ["gemini", "google"] and gemini_model:
-        try:
-            response = gemini_model.generate_content(
-                prompt,
-                generation_config={"temperature": temperature, "max_output_tokens": max_tokens}
-            )
-            return response.text.strip()
-        except Exception as e:
-            print(f"[LLM] Specified Gemini call failed: {e}")
 
     # 2. Default fallback order if provider unconfigured or failed
     if openai_client:
@@ -647,7 +647,8 @@ def unified_legal_chat(
     case_id: Optional[str] = None,
     conversation_history: Optional[List[Dict[str, Any]]] = None,
     user_role: str = "CITIZEN",
-    research_depth: str = "STANDARD"
+    research_depth: str = "STANDARD",
+    provider: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Unified Multi-Mode Authoritative Legal Chat Engine (Phase 7 & Phase 9).
@@ -659,6 +660,7 @@ def unified_legal_chat(
     from nlp.verifier import verify_citations
     from llm.prompts import UNIFIED_CHAT_PROMPT, LEGAL_COMPARISON_PROMPT
     from rag.retrieve import search_similar_documents
+    from rag.statutory_kb import lookup_statutory_provision, format_statutory_research_report
 
     q_clean = (query or "").strip()
     classification = classify_query(q_clean, has_case_context=bool(case_id), history=conversation_history)
@@ -770,11 +772,47 @@ def unified_legal_chat(
         # Global Precedent Search for general / statute / precedent queries
         raw_context = search_similar_documents(primary_search_term, top_k=4, case_id=None)
 
-    # 3. Deduplicate and rank evidence chunks using Question-Relevance Scoring
+    # 3. Check Statutory Knowledge Base & Inject Precedents
+    stat_kb_data = lookup_statutory_provision(q_clean)
+    if stat_kb_data and not (case_id and str(case_id).strip()):
+        for idx, prec in enumerate(stat_kb_data.get("landmark_precedents", []), 1):
+            raw_context.insert(0, {
+                "chunk_id": f"stat_prec_{idx}",
+                "title": f"{prec['case_name']} ({prec['citation']})",
+                "document_id": f"prec_doc_{idx}",
+                "case_name": prec["case_name"],
+                "court": prec["court"],
+                "year": 2024,
+                "act": stat_kb_data["act"],
+                "section": stat_kb_data["section"],
+                "citation": prec["citation"],
+                "authority_level": 1,
+                "relevance_score": 0.95,
+                "excerpt": f"Held: {prec['held']} | Past Evidentiary Context: {prec['evidence_points']}",
+                "source_url": "https://judgments.ecourts.gov.in",
+                "currentness": "VERIFIED"
+            })
+        raw_context.insert(0, {
+            "chunk_id": "stat_text_main",
+            "title": f"{stat_kb_data['act']} - {stat_kb_data['section']}",
+            "document_id": "statute_official_doc",
+            "case_name": stat_kb_data["title"],
+            "court": "Parliament of India / Constituent Assembly",
+            "year": 2024,
+            "act": stat_kb_data["act"],
+            "section": stat_kb_data["section"],
+            "citation": "Official Gazette / Constitutional Text",
+            "authority_level": 1,
+            "relevance_score": 0.98,
+            "excerpt": f"Statutory Text: {stat_kb_data['statutory_text']} | Evidentiary Standard: {stat_kb_data.get('evidentiary_requirements', '')}",
+            "source_url": "https://indiacode.nic.in",
+            "currentness": "VERIFIED"
+        })
+
+    # Deduplicate and rank evidence chunks using Question-Relevance Scoring
     context_items = rank_and_deduplicate_chunks(raw_context, top_k=4, query=q_clean)
 
     # 4. Evaluate Currentness from retrieved metadata
-
     has_repealed = any(item.get("currentness") in ["REPEALED", "SUPERSEDED"] for item in context_items)
     currentness_status = "SUPERSEDED" if has_repealed else ("VERIFIED" if context_items else "CURRENTNESS_UNVERIFIED")
 
@@ -795,7 +833,7 @@ def unified_legal_chat(
         "explain in detail", "full analysis", "detailed research", "detailed explanation",
         "show all cases", "deep research", "comprehensive analysis", "in detail"
     ])
-    max_tokens_to_use = 1200 if is_detailed_requested else 350
+    max_tokens_to_use = 1200 if is_detailed_requested else 450
 
     if mode == LegalQueryMode.LEGAL_COMPARISON:
         prompt = LEGAL_COMPARISON_PROMPT.format(query=q_clean, context=formatted_evidence)
@@ -808,7 +846,7 @@ def unified_legal_chat(
             query=q_clean
         )
 
-    llm_answer = call_llm(prompt, temperature=0.0, max_tokens=max_tokens_to_use)
+    llm_answer = call_llm(prompt, temperature=0.0, max_tokens=max_tokens_to_use, provider=provider)
 
     # Post-clean robotic headers if any were produced by the LLM
     if llm_answer:
@@ -824,7 +862,9 @@ def unified_legal_chat(
     # 8. Fallback synthesis if LLM returns empty or API key unconfigured
     if not llm_answer:
         q_lower = q_clean.lower()
-        if any(k in q_lower for k in ["how to file a complaint", "file a complaint", "police complaint", "file fir", "how to file complaint", "file a case", "complaint procedure"]):
+        if stat_kb_data:
+            llm_answer = format_statutory_research_report(stat_kb_data, q_clean)
+        elif any(k in q_lower for k in ["how to file a complaint", "file a complaint", "police complaint", "file fir", "how to file complaint", "file a case", "complaint procedure"]):
             llm_answer = (
                 "To file a complaint under Indian legal procedure, the process depends on whether the issue is criminal, consumer, civil, or online fraud:\n\n"
                 "1. **Criminal Complaint / FIR**: For criminal offences, submit a written complaint or report a First Information Report (FIR) at your local police station under Section 173 BNSS (Section 154 CrPC). If police refuse to register the FIR, send a written complaint to the Superintendent of Police or file a private complaint before a Magistrate under Section 223 BNSS (Section 200 CrPC).\n\n"

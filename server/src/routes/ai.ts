@@ -139,7 +139,7 @@ router.post('/draft', optionalAuth, async (req: Request, res: Response) => {
 
 // Helper for proxying chat to FastAPI /chat/legal
 const handleLegalChat = async (req: AuthRequest, res: Response) => {
-  const { query, message, caseId, case_id, conversationHistory, history, researchDepth, research_depth } = req.body;
+  const { query, message, caseId, case_id, conversationHistory, history, researchDepth, research_depth, model, provider } = req.body;
   const queryText = query || message || '';
   const activeCaseId = caseId || case_id || null;
   const conversation = conversationHistory || history || [];
@@ -156,6 +156,8 @@ const handleLegalChat = async (req: AuthRequest, res: Response) => {
     conversation_history: conversation,
     user_role: userRole,
     research_depth: depth,
+    model,
+    provider,
   }, res);
 };
 
@@ -167,7 +169,7 @@ router.post('/chat/legal', optionalAuth, handleLegalChat);
 
 // POST /api/ai/research — Deep legal research engine (allow optional auth)
 router.post('/research', optionalAuth, async (req: AuthRequest, res: Response) => {
-  const { question, query, researchDepth, research_depth, caseId, case_id, conversationHistory, history } = req.body;
+  const { question, query, researchDepth, research_depth, caseId, case_id, conversationHistory, history, model, provider } = req.body;
   const questionText = question || query || '';
   const depth = researchDepth || research_depth || 'STANDARD';
   const activeCaseId = caseId || case_id || null;
@@ -184,6 +186,8 @@ router.post('/research', optionalAuth, async (req: AuthRequest, res: Response) =
     case_id: activeCaseId,
     user_role: userRole,
     conversation_history: conversation,
+    model,
+    provider,
   }, res);
 });
 

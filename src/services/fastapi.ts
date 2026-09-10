@@ -111,7 +111,7 @@ export const fastApi = {
     }),
 
   // Unified legal chatbot
-  chatLegal: (query: string, caseId?: string, history?: any[], userRole?: string, researchDepth?: string) =>
+  chatLegal: (query: string, caseId?: string, history?: any[], userRole?: string, researchDepth?: string, model?: string) =>
     fastApiRequest<any>('/chat/legal', {
       method: 'POST',
       body: JSON.stringify({
@@ -120,11 +120,13 @@ export const fastApi = {
         conversation_history: history || [],
         user_role: userRole || 'CITIZEN',
         research_depth: researchDepth || 'STANDARD',
+        model: model || 'gemini',
+        provider: model || 'gemini',
       }),
     }),
 
   // Deep legal research engine
-  researchDeep: (question: string, depth?: string, caseId?: string, userRole?: string, history?: any[]) =>
+  researchDeep: (question: string, depth?: string, caseId?: string, userRole?: string, history?: any[], model?: string) =>
     fastApiRequest<any>('/research', {
       method: 'POST',
       body: JSON.stringify({
@@ -133,6 +135,8 @@ export const fastApi = {
         case_id: caseId || null,
         user_role: userRole || 'CITIZEN',
         conversation_history: history || [],
+        model: model || 'gemini',
+        provider: model || 'gemini',
       }),
     }),
 };

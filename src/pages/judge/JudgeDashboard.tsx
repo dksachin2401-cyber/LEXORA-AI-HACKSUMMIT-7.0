@@ -10,17 +10,15 @@ export const JudgeDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [cases, setCases] = useState<any[]>([]);
   const [hearings, setHearings] = useState<any[]>([]);
-  const [activity, setActivity] = useState<any[]>([]);
   const [analytics, setAnalytics] = useState<any>(null);
   const [chromaOnline, setChromaOnline] = useState<boolean>(true);
 
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      const [casesRes, hearingsRes, activityRes, analyticsRes, healthRes] = await Promise.allSettled([
+      const [casesRes, hearingsRes, analyticsRes, healthRes] = await Promise.allSettled([
         api.getCases(),
         api.getHearings(),
-        api.getAuditLogs(),
         api.getAnalytics(),
         api.getAiHealth(),
       ]);
@@ -33,10 +31,6 @@ export const JudgeDashboard = () => {
       if (hearingsRes.status === 'fulfilled') {
         const rawHearings = hearingsRes.value;
         setHearings(Array.isArray(rawHearings) ? rawHearings : rawHearings?.data || []);
-      }
-
-      if (activityRes.status === 'fulfilled' && activityRes.value?.logs) {
-        setActivity(activityRes.value.logs);
       }
 
       if (analyticsRes.status === 'fulfilled') {
@@ -246,111 +240,69 @@ export const JudgeDashboard = () => {
         </div>
       </div>
 
-      {/* Two Column Section: Upcoming Hearings & Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left 2 Cols: Upcoming Hearings */}
-        <div className="lg:col-span-2 theme-card overflow-hidden">
-          <div className="px-4 py-3 border-b border-subtle theme-elevated flex justify-between items-center">
-            <h2 className="text-sm font-serif font-bold theme-heading flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-              Today's Cause List (Upcoming Hearings)
-            </h2>
-            <Link to="/judge/cases" className="text-xs font-medium text-[var(--primary-accent)] hover:underline flex items-center gap-0.5">
-              Full Docket <ChevronRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left border-collapse">
-              <thead>
-                <tr>
-                  <th className="px-4 py-2.5">Time</th>
-                  <th className="px-4 py-2.5">Case Number</th>
-                  <th className="px-4 py-2.5">Parties</th>
-                  <th className="px-4 py-2.5">Division</th>
-                  <th className="px-4 py-2.5">Stage</th>
-                </tr>
-              </thead>
-              <tbody>
-                {todaysHearings.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="px-4 py-6 text-center theme-subtext">
-                      No hearings scheduled on today's cause list ({todayFormatted}).
-                    </td>
-                  </tr>
-                ) : (
-                  todaysHearings.map((h, i) => (
-                    <tr key={h.id || i} className="hover:theme-elevated transition-colors">
-                      <td className="px-4 py-2.5 font-mono theme-subtext whitespace-nowrap">{h.time || '10:30 AM'}</td>
-                      <td className="px-4 py-2.5 font-mono font-semibold text-[var(--primary-accent)] whitespace-nowrap">
-                        {h.case?.caseNumber || 'CASE-REF'}
-                      </td>
-                      <td className="px-4 py-2.5 font-medium theme-heading">
-                        {h.case?.title || 'State vs. Accused'}
-                      </td>
-                      <td className="px-4 py-2.5 theme-subtext whitespace-nowrap">
-                        {h.courtRoom || h.case?.court || 'Bench II'}
-                      </td>
-                      <td className="px-4 py-2.5 theme-subtext whitespace-nowrap">
-                        <span className="px-2 py-0.5 rounded-sm bg-[#F5EBE6] dark:bg-[#2C241E] text-[10px] font-mono font-medium">
-                          {h.type || h.status || 'Hearing'}
-                        </span>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+      {/* Today's Cause List (Upcoming Hearings) - Full Width Section */}
+      <div className="theme-card overflow-hidden">
+        <div className="px-4 py-3 border-b border-subtle theme-elevated flex justify-between items-center">
+          <h2 className="text-sm font-serif font-bold theme-heading flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+            Today's Cause List (Upcoming Hearings)
+          </h2>
+          <Link to="/judge/cases" className="text-xs font-medium text-[var(--primary-accent)] hover:underline flex items-center gap-0.5">
+            Full Docket <ChevronRight className="w-3.5 h-3.5" />
+          </Link>
         </div>
 
-        {/* Right Col: Recent Activity Audit Stream */}
-        <div className="lg:col-span-1 theme-card p-4 space-y-4">
-          <div className="border-b border-subtle pb-2 flex items-center justify-between">
-            <h3 className="text-xs font-serif font-bold theme-heading uppercase tracking-wider">
-              Recent Case Activity
-            </h3>
-            <Link to="/audit" className="text-[10px] font-mono text-[var(--primary-accent)] hover:underline">
-              Audit Stream →
-            </Link>
-          </div>
-
-          <div className="space-y-3 text-xs">
-            {activity.length === 0 ? (
-              <div className="p-4 text-center theme-subtext text-xs">
-                No recent activity recorded in the judicial audit stream.
-              </div>
-            ) : (
-              activity.slice(0, 4).map((act, i) => {
-                let caseNum = 'SYSTEM';
-                try {
-                  const inputObj = typeof act.input === 'string' ? JSON.parse(act.input) : act.input;
-                  caseNum = inputObj?.caseNumber || inputObj?.caseId || act.actorRole || 'AUDIT';
-                } catch {
-                  caseNum = act.actorRole || 'AUDIT';
-                }
-
-                const timeStr = act.createdAt
-                  ? new Date(act.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                  : 'Just now';
-
-                return (
-                  <div key={act.id || i} className="p-2.5 theme-elevated rounded-sm space-y-1">
-                    <div className="flex items-center justify-between text-[10px] font-mono theme-subtext">
-                      <span className="font-semibold text-[var(--primary-accent)]">{caseNum}</span>
-                      <span>{timeStr}</span>
-                    </div>
-                    <p className="theme-heading leading-snug font-medium">
-                      {act.action?.replace(/_/g, ' ') || 'Action logged'}
-                    </p>
-                    <p className="text-[10px] theme-subtext font-mono">
-                      Actor: {act.actor?.name || act.actorRole || 'System Officer'}
-                    </p>
-                  </div>
-                );
-              })
-            )}
-          </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs text-left border-collapse">
+            <thead>
+              <tr>
+                <th className="px-4 py-3">Time</th>
+                <th className="px-4 py-3">Case Number</th>
+                <th className="px-4 py-3">Parties</th>
+                <th className="px-4 py-3">Division</th>
+                <th className="px-4 py-3">Stage & Purpose</th>
+                <th className="px-4 py-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {todaysHearings.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-6 text-center theme-subtext">
+                    No hearings scheduled on today's cause list ({todayFormatted}).
+                  </td>
+                </tr>
+              ) : (
+                todaysHearings.map((h, i) => (
+                  <tr key={h.id || i} className="hover:theme-elevated transition-colors">
+                    <td className="px-4 py-3 font-mono font-bold text-amber-600 dark:text-amber-400 whitespace-nowrap">{h.time || '10:30 AM'}</td>
+                    <td className="px-4 py-3 font-mono font-semibold text-[var(--primary-accent)] whitespace-nowrap">
+                      {h.case?.caseNumber || 'CASE-REF'}
+                    </td>
+                    <td className="px-4 py-3 font-medium theme-heading">
+                      {h.case?.title || 'State vs. Accused'}
+                    </td>
+                    <td className="px-4 py-3 theme-subtext whitespace-nowrap">
+                      {h.courtRoom || h.case?.court || 'Bench II'}
+                    </td>
+                    <td className="px-4 py-3 theme-subtext whitespace-nowrap">
+                      <span className="px-2 py-0.5 rounded-sm bg-[#F5EBE6] dark:bg-[#2C241E] text-[10px] font-mono font-medium">
+                        {h.type || h.status || 'Hearing'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                      <Link
+                        to="/judge/cases"
+                        className="px-2.5 py-1 theme-secondary-btn text-[11px] font-semibold rounded inline-flex items-center gap-1 cursor-pointer"
+                      >
+                        <Eye className="w-3 h-3 text-[var(--primary-accent)]" />
+                        <span>Open Docket</span>
+                      </Link>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

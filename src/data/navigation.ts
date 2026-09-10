@@ -47,7 +47,6 @@ export const judgeNavItems: NavItem[] = [
   
   { id: 'drafts', label: 'Draft Order Generator', icon: FileCode, path: '/ai/drafts', section: 'DECISIONS' },
   { id: 'evidence', label: 'Bench Evidence Notes', icon: FolderKanban, path: '/ai/evidence', section: 'DECISIONS' },
-  { id: 'audit', label: 'Judicial Audit Logs', icon: ShieldCheck, path: '/audit', section: 'DECISIONS' },
 ];
 
 export const lawyerNavItems: NavItem[] = [
