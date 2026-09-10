@@ -5,6 +5,7 @@ import fs from 'fs';
 import { PrismaClient } from '@prisma/client';
 import { authenticateToken, AuthRequest } from '../middleware/auth.js';
 import { encryptBuffer, decryptBuffer, getInternalApiKey, zeroBuffer } from '../utils/cryptoUtils.js';
+import { canAccessCase } from '../utils/caseAuthorization.js';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -310,32 +311,28 @@ router.get('/:id/download', authenticateToken, async (req: AuthRequest, res: Res
       return res.status(404).json({ error: 'Document not found' });
     }
 
-    // Check authorization: Admin, Staff, Uploader, or assigned Judge/Lawyer of the case
     const isPrivilegedRole = ['ADMIN', 'COURT_STAFF', 'STAFF'].includes(userRole);
     const isUploader = doc.uploadedBy === userId;
-    let isAssignedParty = false;
 
-    if (doc.caseId) {
-      const caseRecord = await prisma.case.findUnique({ where: { id: doc.caseId } });
-      if (caseRecord) {
-        if (userRole === 'JUDGE' && (!caseRecord.judgeId || caseRecord.judgeId === userId)) {
-          isAssignedParty = true;
+    if (!isPrivilegedRole && !isUploader) {
+      if (doc.caseId) {
+        const access = await canAccessCase(req.user, doc.caseId, prisma);
+        if (!access.allowed) {
+          return res.status(403).json({
+            error: 'Access denied',
+            message: access.reason || 'You are not authorized to download this document.'
+          });
         }
-        if (userRole === 'LAWYER' && (!caseRecord.lawyerId || caseRecord.lawyerId === userId)) {
-          isAssignedParty = true;
-        }
+      } else {
+        return res.status(403).json({
+          error: 'Access denied',
+          message: 'You are not authorized to download this document.'
+        });
       }
     }
 
-    if (!isPrivilegedRole && !isUploader && !isAssignedParty) {
-      return res.status(403).json({
-        error: 'Access denied',
-        message: 'You are not authorized to download this document.'
-      });
-    }
-
     if (!doc.filePath) {
-      return res.status(404).json({ error: 'File path not record in database' });
+      return res.status(404).json({ error: 'File path not recorded in database' });
     }
 
     const localFilePath = path.join(process.cwd(), doc.filePath.replace(/^\//, ''));
@@ -375,7 +372,8 @@ router.get('/:id/status', authenticateToken, async (req: AuthRequest, res: Respo
         status: true,
         pageCount: true,
         errorReason: true,
-        uploadedAt: true
+        uploadedAt: true,
+        uploadedBy: true
       }
     });
 
@@ -383,15 +381,20 @@ router.get('/:id/status', authenticateToken, async (req: AuthRequest, res: Respo
       return res.status(404).json({ error: 'Document not found' });
     }
 
-    // Ownership check: only the uploader, assigned judge/lawyer, admin, staff can poll status
-    const docFull = await prisma.document.findUnique({ where: { id: docId } });
     const userRole = req.user?.role?.toUpperCase() || '';
     const userId   = req.user?.id || '';
     const isPrivileged = ['ADMIN', 'COURT_STAFF', 'STAFF'].includes(userRole);
-    const isUploader   = docFull?.uploadedBy === userId;
+    const isUploader   = doc.uploadedBy === userId;
 
     if (!isPrivileged && !isUploader) {
-      return res.status(403).json({ error: 'Access denied: You cannot view this document status' });
+      if (doc.caseId) {
+        const access = await canAccessCase(req.user, doc.caseId, prisma);
+        if (!access.allowed) {
+          return res.status(403).json({ error: 'Access denied: You cannot view this document status' });
+        }
+      } else {
+        return res.status(403).json({ error: 'Access denied: You cannot view this document status' });
+      }
     }
 
     return res.json({ success: true, document: doc });
@@ -401,7 +404,7 @@ router.get('/:id/status', authenticateToken, async (req: AuthRequest, res: Respo
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// GET /api/documents — Authenticated document list
+// GET /api/documents — Authenticated user-scoped document list
 // ─────────────────────────────────────────────────────────────────────────────
 router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
@@ -412,22 +415,43 @@ router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
     const where: any = {};
 
     if (caseId) {
-      where.caseId = String(caseId);
-
-      // For lawyers, additionally scope to cases they are assigned to
-      if (userRole === 'LAWYER') {
-        const caseRecord = await prisma.case.findUnique({ where: { id: String(caseId) } });
-        if (caseRecord && caseRecord.lawyerId && caseRecord.lawyerId !== userId) {
-          return res.status(403).json({
-            error: 'Access denied: You do not have access to documents for this case'
-          });
-        }
+      const targetCaseId = String(caseId);
+      const access = await canAccessCase(req.user, targetCaseId, prisma);
+      if (!access.allowed) {
+        return res.status(403).json({
+          error: 'Access denied: You do not have access to documents for this case'
+        });
       }
+      where.caseId = targetCaseId;
     } else {
-      // Without caseId filter, non-admin users only see their own uploaded documents
-      if (!['ADMIN', 'COURT_STAFF', 'STAFF', 'JUDGE'].includes(userRole)) {
-        where.uploadedBy = userId;
+      // Without caseId filter, scope strictly by user role
+      if (userRole === 'LAWYER') {
+        const userCases = await prisma.case.findMany({ where: { lawyerId: userId }, select: { id: true } });
+        const userCaseIds = userCases.map(c => c.id);
+        where.OR = [
+          { uploadedBy: userId },
+          { caseId: { in: userCaseIds } }
+        ];
+      } else if (userRole === 'JUDGE') {
+        const userCases = await prisma.case.findMany({ where: { OR: [{ judgeId: userId }, { judgeId: null }] }, select: { id: true } });
+        const userCaseIds = userCases.map(c => c.id);
+        where.OR = [
+          { uploadedBy: userId },
+          { caseId: { in: userCaseIds } }
+        ];
+      } else if (userRole === 'CITIZEN') {
+        const userName = req.user?.name || '';
+        const userCases = await prisma.case.findMany({
+          where: { OR: [{ petitioner: { contains: userName } }, { respondent: { contains: userName } }] },
+          select: { id: true }
+        });
+        const userCaseIds = userCases.map(c => c.id);
+        where.OR = [
+          { uploadedBy: userId },
+          { AND: [{ caseId: { in: userCaseIds } }, { status: 'INDEXED' }] }
+        ];
       }
+      // ADMIN & COURT_STAFF see all
     }
 
     const docs = await prisma.document.findMany({
@@ -461,21 +485,16 @@ router.delete('/:id', authenticateToken, async (req: AuthRequest, res: Response)
     // Check authorization: Admin, Staff, Uploader, or assigned Judge/Lawyer of the case
     const isPrivilegedRole = ['ADMIN', 'COURT_STAFF', 'STAFF'].includes(userRole);
     const isUploader = doc.uploadedBy === userId;
-    let isAssignedParty = false;
+    let isAssignedAuthorized = false;
 
     if (doc.caseId) {
-      const caseRecord = await prisma.case.findUnique({ where: { id: doc.caseId } });
-      if (caseRecord) {
-        if (userRole === 'JUDGE' && (!caseRecord.judgeId || caseRecord.judgeId === userId)) {
-          isAssignedParty = true;
-        }
-        if (userRole === 'LAWYER' && (!caseRecord.lawyerId || caseRecord.lawyerId === userId)) {
-          isAssignedParty = true;
-        }
+      const access = await canAccessCase(req.user, doc.caseId, prisma);
+      if (access.allowed && ['JUDGE', 'LAWYER'].includes(userRole)) {
+        isAssignedAuthorized = true;
       }
     }
 
-    if (!isPrivilegedRole && !isUploader && !isAssignedParty) {
+    if (!isPrivilegedRole && !isUploader && !isAssignedAuthorized) {
       return res.status(403).json({
         error: 'Access denied',
         message: 'You are not authorized to delete this document.'

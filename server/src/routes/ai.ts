@@ -3,6 +3,7 @@ import multer from 'multer';
 import { PrismaClient } from '@prisma/client';
 import { authenticateToken, optionalAuth, AuthRequest } from '../middleware/auth.js';
 import { getInternalApiKey } from '../utils/cryptoUtils.js';
+import { canAccessCase } from '../utils/caseAuthorization.js';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -77,12 +78,18 @@ router.post('/extract', optionalAuth, upload.single('file'), async (req: AuthReq
 });
 
 // POST /api/ai/analyze — NLP entity extraction
-router.post('/analyze', optionalAuth, async (req: Request, res: Response) => {
+router.post('/analyze', optionalAuth, async (req: AuthRequest, res: Response) => {
   const { text, caseId } = req.body;
   if (!text) return res.status(400).json({ error: 'Text is required for entity analysis' });
 
   // Update Prisma database analysis if caseId provided
   if (caseId) {
+    if (req.user) {
+      const access = await canAccessCase(req.user, String(caseId), prisma);
+      if (!access.allowed) {
+        return res.status(403).json({ error: access.reason || 'Access denied: You do not have permission to analyze this case.' });
+      }
+    }
     try {
       const findings = ['Document analysis confirms procedural compliance under relevant judicial acts.'];
       const precedents = ['State of Maharashtra v. Prakash (2020) 3 SCC 410'];
@@ -128,12 +135,30 @@ router.post('/similar-cases', optionalAuth, async (req: Request, res: Response) 
 });
 
 // POST /api/ai/ask — Case-scoped RAG Q&A
-router.post('/ask', optionalAuth, async (req: Request, res: Response) => {
+router.post('/ask', optionalAuth, async (req: AuthRequest, res: Response) => {
+  const targetCaseId = req.body.case_id || req.body.caseId;
+  if (targetCaseId && req.user) {
+    const access = await canAccessCase(req.user, String(targetCaseId), prisma);
+    if (!access.allowed) {
+      return res.status(403).json({
+        error: 'Access denied: You are not authorized to query AI analysis for this case.'
+      });
+    }
+  }
   return proxyToFastApi('/ask', req.body, res);
 });
 
 // POST /api/ai/draft — Order/notice draft generator
-router.post('/draft', optionalAuth, async (req: Request, res: Response) => {
+router.post('/draft', optionalAuth, async (req: AuthRequest, res: Response) => {
+  const targetCaseId = req.body.case_id || req.body.caseId;
+  if (targetCaseId && req.user) {
+    const access = await canAccessCase(req.user, String(targetCaseId), prisma);
+    if (!access.allowed) {
+      return res.status(403).json({
+        error: 'Access denied: You are not authorized to generate drafts for this case.'
+      });
+    }
+  }
   return proxyToFastApi('/draft', req.body, res);
 });
 
@@ -148,6 +173,15 @@ const handleLegalChat = async (req: AuthRequest, res: Response) => {
 
   if (!queryText.trim()) {
     return res.status(400).json({ error: 'Query or message is required' });
+  }
+
+  if (activeCaseId && req.user) {
+    const access = await canAccessCase(req.user, String(activeCaseId), prisma);
+    if (!access.allowed) {
+      return res.status(403).json({
+        error: 'Access denied: You are not authorized to query AI analysis for this case.'
+      });
+    }
   }
 
   return proxyToFastApi('/chat/legal', {
@@ -178,6 +212,15 @@ router.post('/research', optionalAuth, async (req: AuthRequest, res: Response) =
 
   if (!questionText.trim()) {
     return res.status(400).json({ error: 'Question is required for research' });
+  }
+
+  if (activeCaseId && req.user) {
+    const access = await canAccessCase(req.user, String(activeCaseId), prisma);
+    if (!access.allowed) {
+      return res.status(403).json({
+        error: 'Access denied: You are not authorized to query legal research for this case.'
+      });
+    }
   }
 
   return proxyToFastApi('/research', {

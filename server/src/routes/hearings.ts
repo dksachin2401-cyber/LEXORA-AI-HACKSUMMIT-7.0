@@ -1,16 +1,32 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { authenticateToken, requireRole, AuthRequest } from '../middleware/auth.js';
+import { authenticateToken, requireRole, optionalAuth, AuthRequest } from '../middleware/auth.js';
+import { canAccessCase, getAuthorizedHearingWhere } from '../utils/caseAuthorization.js';
 
 const router = Router();
 const prisma = new PrismaClient();
 
-// GET /api/hearings
-router.get('/', async (req: Request, res: Response) => {
+// GET /api/hearings - User-scoped and paginated hearings list
+router.get('/', optionalAuth, async (req: AuthRequest, res: Response) => {
   try {
     const { caseId, date, page, limit } = req.query;
-    const where: any = {};
-    if (caseId) where.caseId = String(caseId);
+    let where: any = {};
+
+    if (req.user) {
+      where = { ...getAuthorizedHearingWhere(req.user) };
+    }
+
+    if (caseId) {
+      const targetCaseId = String(caseId);
+      if (req.user) {
+        const access = await canAccessCase(req.user, targetCaseId, prisma);
+        if (!access.allowed) {
+          return res.status(403).json({ error: access.reason || 'Access denied: You do not have access to hearings for this case' });
+        }
+      }
+      where.caseId = targetCaseId;
+    }
+
     if (date) {
       if (date === 'today') {
         where.date = new Date().toISOString().split('T')[0];
@@ -86,6 +102,12 @@ router.post('/suggest', authenticateToken, async (req: AuthRequest, res: Respons
 
     if (!caseId) {
       return res.status(400).json({ error: 'caseId is required' });
+    }
+
+    // Verify user is authorized to suggest hearings for this case
+    const access = await canAccessCase(req.user, String(caseId), prisma);
+    if (!access.allowed) {
+      return res.status(403).json({ error: access.reason || 'Access denied: You are not authorized to suggest hearings for this case.' });
     }
 
     const date = targetDate || new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
@@ -169,6 +191,11 @@ router.put('/:id/approve', authenticateToken, requireRole(['JUDGE', 'COURT_STAFF
       return res.status(404).json({ error: 'Hearing not found' });
     }
 
+    // Role-specific case ownership check: If JUDGE, must be assigned judge
+    if (req.user?.role?.toUpperCase() === 'JUDGE' && hearing.case?.judgeId && hearing.case.judgeId !== req.user.id) {
+      return res.status(403).json({ error: 'Access denied: Hearing belongs to another judge\'s bench.' });
+    }
+
     // Update hearing status to APPROVED
     const updated = await prisma.hearing.update({
       where: { id: hearingId },
@@ -218,10 +245,16 @@ router.put('/:id/reject', authenticateToken, requireRole(['JUDGE', 'COURT_STAFF'
 
     const hearing = await prisma.hearing.findUnique({
       where: { id: hearingId },
+      include: { case: true },
     });
 
     if (!hearing) {
       return res.status(404).json({ error: 'Hearing not found' });
+    }
+
+    // Role-specific check
+    if (req.user?.role?.toUpperCase() === 'JUDGE' && hearing.case?.judgeId && hearing.case.judgeId !== req.user.id) {
+      return res.status(403).json({ error: 'Access denied: Hearing belongs to another judge\'s bench.' });
     }
 
     const updated = await prisma.hearing.update({

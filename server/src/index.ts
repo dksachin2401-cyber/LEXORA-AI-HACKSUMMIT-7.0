@@ -18,6 +18,7 @@ import draftsRoutes from './routes/drafts.js';
 import auditRoutes from './routes/audit.js';
 import adminRoutes from './routes/admin.js';
 import filingsRoutes from './routes/filings.js';
+import notificationsRoutes from './routes/notifications.js';
 import { validateCryptoConfig } from './utils/cryptoUtils.js';
 import { requestLogger } from './middleware/logger.js';
 import systemRoutes from './routes/system.js';
@@ -152,6 +153,7 @@ app.use('/api/drafts', draftsRoutes);
 app.use('/api/audit', auditRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/filings', filingsRoutes);
+app.use('/api/notifications', notificationsRoutes);
 app.use('/api/system', systemRoutes);
 
 // ── Liveness Health Check (process alive — no dependency info) ────────────────

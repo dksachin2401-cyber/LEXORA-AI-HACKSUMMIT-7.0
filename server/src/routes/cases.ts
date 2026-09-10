@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authenticateToken, requireRole, optionalAuth, AuthRequest } from '../middleware/auth.js';
 import { encryptField, decryptField } from '../utils/fieldEncryption.js';
+import { canAccessCase, getAuthorizedCaseWhere } from '../utils/caseAuthorization.js';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -135,28 +136,29 @@ router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     const { status, division, priority, search, page, limit } = req.query;
 
-    const where: any = {};
+    const authWhere = getAuthorizedCaseWhere(req.user);
+    const where: any = { ...authWhere };
+
     if (status && status !== 'All') where.status = String(status);
     if (division) where.division = String(division);
     if (priority) where.priority = String(priority);
 
-    // Server-side Authorization Filtering:
-    // If authenticated user is a LAWYER, strictly scope queries to cases assigned to that lawyer.
-    if (req.user && req.user.role.toUpperCase() === 'LAWYER') {
-      where.lawyerId = req.user.id;
-    }
-
     if (search) {
       const searchStr = String(search);
-      where.AND = where.AND || [];
-      where.AND.push({
+      const searchCondition = {
         OR: [
           { caseNumber: { contains: searchStr } },
           { title: { contains: searchStr } },
           { petitioner: { contains: searchStr } },
           { respondent: { contains: searchStr } },
         ],
-      });
+      };
+
+      if (where.AND) {
+        where.AND.push(searchCondition);
+      } else {
+        where.AND = [searchCondition];
+      }
     }
 
     // Check if pagination was requested
@@ -234,11 +236,10 @@ router.get('/:id', authenticateToken, async (req: AuthRequest, res: Response) =>
       return res.status(404).json({ error: 'Case not found' });
     }
 
-    // Server-Side Authorization: If authenticated user is a LAWYER, prevent access to another lawyer's restricted case
-    if (req.user && req.user.role.toUpperCase() === 'LAWYER') {
-      if (c.lawyerId && c.lawyerId !== req.user.id) {
-        return res.status(403).json({ error: 'Access denied: Case is assigned to another legal counsel' });
-      }
+    // Server-Side Authorization: Prevent unauthorized access across legal counsels, benches, and citizens
+    const access = await canAccessCase(req.user, c, prisma);
+    if (!access.allowed) {
+      return res.status(403).json({ error: access.reason || 'Access denied: You do not have permission to view this case.' });
     }
 
     return res.json({

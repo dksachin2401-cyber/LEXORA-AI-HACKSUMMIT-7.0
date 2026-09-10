@@ -68,15 +68,26 @@ router.post('/', optionalAuth, async (req: AuthRequest, res: Response) => {
   }
 });
 
-// GET /api/filings — Retrieve filings
+// GET /api/filings — Retrieve user-scoped filings
 router.get('/', optionalAuth, async (req: AuthRequest, res: Response) => {
   try {
     const userRole = req.user?.role?.toUpperCase() || 'CITIZEN';
     const userId   = req.user?.id;
 
     const where: any = {};
-    if (['CITIZEN', 'LAWYER'].includes(userRole) && userId) {
+    if (userRole === 'CITIZEN' && userId) {
       where.applicantId = userId;
+    } else if (userRole === 'LAWYER' && userId) {
+      const userCases = await prisma.case.findMany({ where: { lawyerId: userId }, select: { id: true } });
+      const userCaseIds = userCases.map(c => c.id);
+      where.OR = [
+        { applicantId: userId },
+        { caseId: { in: userCaseIds } }
+      ];
+    } else if (userRole === 'JUDGE' && userId) {
+      const userCases = await prisma.case.findMany({ where: { OR: [{ judgeId: userId }, { judgeId: null }] }, select: { id: true } });
+      const userCaseIds = userCases.map(c => c.id);
+      where.caseId = { in: userCaseIds };
     }
 
     const filings = await prisma.filing.findMany({

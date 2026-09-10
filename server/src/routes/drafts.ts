@@ -2,28 +2,60 @@ import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authenticateToken, requireRole, AuthRequest } from '../middleware/auth.js';
 import { encryptField, decryptField } from '../utils/fieldEncryption.js';
+import { canAccessCase } from '../utils/caseAuthorization.js';
 
 const router = Router();
 const prisma = new PrismaClient();
 
-// Get draft orders
+// Get draft orders - Scoped strictly by user role & case assignment
 router.get('/', authenticateToken, async (req: AuthRequest, res) => {
   try {
+    const userRole = req.user?.role?.toUpperCase() || '';
+    const userId   = req.user?.id || '';
+
+    const where: any = {};
+
+    if (userRole === 'LAWYER') {
+      const userCases = await prisma.case.findMany({ where: { lawyerId: userId }, select: { id: true } });
+      const userCaseIds = userCases.map(c => c.id);
+      where.caseId = { in: userCaseIds };
+    } else if (userRole === 'JUDGE') {
+      const userCases = await prisma.case.findMany({ where: { OR: [{ judgeId: userId }, { judgeId: null }] }, select: { id: true } });
+      const userCaseIds = userCases.map(c => c.id);
+      where.OR = [
+        { caseId: { in: userCaseIds } },
+        { signedById: userId }
+      ];
+    } else if (userRole === 'CITIZEN') {
+      const userName = req.user?.name || '';
+      const userCases = await prisma.case.findMany({
+        where: { OR: [{ petitioner: { contains: userName } }, { respondent: { contains: userName } }] },
+        select: { id: true }
+      });
+      const userCaseIds = userCases.map(c => c.id);
+      where.caseId = { in: userCaseIds };
+      where.status = 'APPROVED'; // Citizens only see approved orders/notices
+    }
+    // STAFF & ADMIN see all drafts
+
     const drafts = await prisma.draftOrder.findMany({
+      where,
       include: { case: true, signedBy: true },
       orderBy: { createdAt: 'desc' }
     });
+
     const decryptedDrafts = drafts.map(d => ({
       ...d,
       content: decryptField(d.content) || ''
     }));
+
     res.json({ success: true, drafts: decryptedDrafts });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch drafts' });
   }
 });
 
-// Create draft order
+// Create draft order - Authorization checked
 router.post('/', authenticateToken, async (req: AuthRequest, res) => {
   try {
     const { caseId, docType, title, content } = req.body;
@@ -35,13 +67,18 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
       });
       if (existing) targetCaseId = existing.id;
     }
-    if (!targetCaseId) {
-      const firstCase = await prisma.case.findFirst();
-      if (firstCase) targetCaseId = firstCase.id;
-    }
 
     if (!targetCaseId) {
-      return res.status(400).json({ error: 'No associated case found to link draft order.' });
+      return res.status(400).json({ error: 'Valid case ID is required to link draft order.' });
+    }
+
+    // Verify user is authorized to create draft for this case
+    const access = await canAccessCase(req.user, targetCaseId, prisma);
+    if (!access.allowed) {
+      return res.status(403).json({
+        error: 'Access denied',
+        message: access.reason || 'You are not authorized to create draft orders for this case.'
+      });
     }
 
     const draft = await prisma.draftOrder.create({
@@ -61,7 +98,7 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
           actorId: req.user.id,
           actorRole: req.user.role,
           action: 'DRAFT_GENERATED',
-          input: `Generated draft ${docType} for Case ID ${caseId}`,
+          input: `Generated draft ${docType} for Case ID ${targetCaseId}`,
           output: title,
           outcome: 'AWAITING_HUMAN_SIGN_OFF'
         }
@@ -87,6 +124,20 @@ router.post('/:id/sign-off', authenticateToken, requireRole(['JUDGE', 'COURT_STA
 
     if (!['APPROVED', 'REJECTED'].includes(status)) {
       return res.status(400).json({ error: 'Invalid sign-off status.' });
+    }
+
+    const existingDraft = await prisma.draftOrder.findUnique({
+      where: { id: draftId },
+      include: { case: true }
+    });
+
+    if (!existingDraft) {
+      return res.status(404).json({ error: 'Draft order not found' });
+    }
+
+    // If Judge, ensure assigned judge on case
+    if (req.user?.role?.toUpperCase() === 'JUDGE' && existingDraft.case?.judgeId && existingDraft.case.judgeId !== req.user.id) {
+      return res.status(403).json({ error: 'Access denied: Draft belongs to another judge\'s bench.' });
     }
 
     const draft = await prisma.draftOrder.update({

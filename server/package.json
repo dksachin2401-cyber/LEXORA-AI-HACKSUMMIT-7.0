@@ -7,7 +7,7 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "test": "tsx --test src/tests/auth.test.ts src/tests/hearings.test.ts src/tests/cases.test.ts src/tests/crypto.test.ts src/tests/s1_auth_security.test.ts src/tests/s2_crypto_security.test.ts src/tests/s3_infrastructure_security.test.ts src/tests/s4_adversarial_security.test.ts src/tests/s10_production.test.ts",
+    "test": "tsx --test src/tests/auth.test.ts src/tests/hearings.test.ts src/tests/cases.test.ts src/tests/crypto.test.ts src/tests/s1_auth_security.test.ts src/tests/s2_crypto_security.test.ts src/tests/s3_infrastructure_security.test.ts src/tests/s4_adversarial_security.test.ts src/tests/s10_production.test.ts src/tests/s11_user_scoped_isolation.test.ts",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
     "prisma:seed": "tsx prisma/seed.ts"
