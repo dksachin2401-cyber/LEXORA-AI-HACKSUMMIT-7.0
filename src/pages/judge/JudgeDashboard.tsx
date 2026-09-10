@@ -117,24 +117,64 @@ export const JudgeDashboard = () => {
         </div>
       </div>
 
-      {/* Operational Summary Strip */}
-      <div className="theme-card p-4 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <span className="text-[10px] font-mono font-semibold uppercase tracking-wider block opacity-60">
+      {/* Today's Operational Summary - Prominent Stats Cards */}
+      <div className="space-y-3">
+        <div className="flex justify-between items-center px-0.5">
+          <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-[var(--primary-accent)]">
             TODAY'S OPERATIONAL SUMMARY
           </span>
-          <div className="flex items-baseline gap-4 mt-1">
-            <span className="text-lg font-bold font-mono">{hearingsCount} <span className="text-xs font-sans font-normal theme-subtext">Hearings</span></span>
-            <span className="opacity-40">·</span>
-            <span className="text-lg font-bold text-[var(--primary-accent)] font-mono">{pendingReviewsCount} <span className="text-xs font-sans font-normal theme-subtext">Pending Reviews</span></span>
-            <span className="opacity-40">·</span>
-            <span className="text-lg font-bold font-mono">{activeMattersCount} <span className="text-xs font-sans font-normal theme-subtext">Active Matters</span></span>
+          <div className="flex items-center gap-2 text-[11px] font-mono theme-subtext theme-elevated px-2.5 py-1 rounded border border-subtle">
+            <span className={`w-2 h-2 rounded-full ${chromaOnline ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></span>
+            <span>CHROMA VECTOR INDEX: <strong className={chromaOnline ? 'text-emerald-500 font-bold' : 'text-rose-500 font-bold'}>{chromaOnline ? 'ONLINE' : 'OFFLINE'}</strong></span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 text-xs font-mono theme-subtext theme-elevated px-3 py-1.5 rounded-sm">
-          <span className={`w-2 h-2 rounded-full ${chromaOnline ? 'bg-emerald-600 dark:bg-emerald-400' : 'bg-rose-500'}`}></span>
-          <span>CHROMA VECTOR INDEX: {chromaOnline ? 'ONLINE' : 'OFFLINE'}</span>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="theme-card p-5 rounded-xl border border-subtle shadow-sm flex items-center justify-between transition-all hover:border-[var(--primary-accent)]">
+            <div className="space-y-1">
+              <p className="text-[11px] theme-subtext font-semibold uppercase tracking-wider">Today's Hearings</p>
+              <h2 className="text-3xl font-serif font-bold font-mono theme-heading">{hearingsCount}</h2>
+              <p className="text-[11px] text-amber-500 font-medium">Scheduled on Cause List</p>
+            </div>
+            <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
+              <Calendar className="w-6 h-6 text-amber-500" />
+            </div>
+          </div>
+
+          <div className="theme-card p-5 rounded-xl border border-subtle shadow-sm flex items-center justify-between transition-all hover:border-[var(--primary-accent)]">
+            <div className="space-y-1">
+              <p className="text-[11px] theme-subtext font-semibold uppercase tracking-wider">Pending Reviews</p>
+              <h2 className="text-3xl font-serif font-bold font-mono text-[var(--primary-accent)]">{pendingReviewsCount}</h2>
+              <p className="text-[11px] text-amber-600 dark:text-amber-400 font-medium">Awaiting Judicial Direction</p>
+            </div>
+            <div className="w-12 h-12 rounded-xl bg-amber-600/10 border border-amber-600/20 flex items-center justify-center shrink-0">
+              <Clock className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+            </div>
+          </div>
+
+          <div className="theme-card p-5 rounded-xl border border-subtle shadow-sm flex items-center justify-between transition-all hover:border-[var(--primary-accent)]">
+            <div className="space-y-1">
+              <p className="text-[11px] theme-subtext font-semibold uppercase tracking-wider">Active Docket Matters</p>
+              <h2 className="text-3xl font-serif font-bold font-mono theme-heading">{activeMattersCount}</h2>
+              <p className="text-[11px] text-blue-500 font-medium">Assigned High Court Dockets</p>
+            </div>
+            <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
+              <FileText className="w-6 h-6 text-blue-500" />
+            </div>
+          </div>
+
+          <div className="theme-card p-5 rounded-xl border border-subtle shadow-sm flex items-center justify-between transition-all hover:border-[var(--primary-accent)]">
+            <div className="space-y-1">
+              <p className="text-[11px] theme-subtext font-semibold uppercase tracking-wider">High Priority Matters</p>
+              <h2 className="text-3xl font-serif font-bold font-mono text-rose-500">
+                {String(cases.filter((c) => c.priority === 'High').length).padStart(2, '0')}
+              </h2>
+              <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">⚡ Expedited Decision Track</p>
+            </div>
+            <div className="w-12 h-12 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center shrink-0">
+              <AlertTriangle className="w-6 h-6 text-rose-500" />
+            </div>
+          </div>
         </div>
       </div>
 
