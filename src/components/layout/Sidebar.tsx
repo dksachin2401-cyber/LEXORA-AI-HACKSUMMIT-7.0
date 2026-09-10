@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Scale, ChevronLeft, ChevronRight, LogOut, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
-import { getNavItems } from '@/data/navigation';
+import { getNavItems, type NavItem } from '@/data/navigation';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -24,6 +24,18 @@ export function Sidebar({
 
   const navItems = getNavItems(user?.role || 'judge');
 
+  // Group items by section
+  const sections: { name: string; items: NavItem[] }[] = [];
+  navItems.forEach((item) => {
+    const secName = item.section || 'WORKSPACE';
+    let sec = sections.find((s) => s.name === secName);
+    if (!sec) {
+      sec = { name: secName, items: [] };
+      sections.push(sec);
+    }
+    sec.items.push(item);
+  });
+
   const handleLogout = () => {
     logout();
     navigate('/');
@@ -40,31 +52,31 @@ export function Sidebar({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onMobileClose}
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 lg:hidden"
+            className="fixed inset-0 bg-stone-900/40 z-40 lg:hidden"
           />
         )}
       </AnimatePresence>
 
       <aside
         className={cn(
-          'fixed left-0 top-0 h-screen flex flex-col border-r border-white/15 bg-[#0F1B33] text-white z-40 transition-all duration-300 shadow-2xl',
+          'fixed left-0 top-0 h-screen flex flex-col theme-sidebar z-40 transition-all duration-200 shadow-xs',
           collapsed ? 'w-16' : 'w-64',
           mobileOpen ? 'translate-x-0 w-64' : '-translate-x-full lg:translate-x-0'
         )}
       >
         {/* Brand Header */}
-        <div className="flex items-center justify-between px-4 h-16 border-b border-white/15 shrink-0 bg-[#0A1428]">
-          <div className="flex items-center gap-3 overflow-hidden">
-            <div className="w-8 h-8 rounded-lg bg-[#C9A24B] flex items-center justify-center text-[#1B2C4F] font-bold shrink-0 shadow-md">
-              <Scale className="w-5 h-5 text-[#1B2C4F]" />
+        <div className="flex items-center justify-between px-4 h-14 border-b border-subtle shrink-0 theme-elevated">
+          <div className="flex items-center gap-2.5 overflow-hidden">
+            <div className="w-7 h-7 rounded-sm theme-primary-btn flex items-center justify-center font-bold shrink-0">
+              <Scale className="w-4 h-4 text-white" />
             </div>
             {(!collapsed || mobileOpen) && (
               <div className="min-w-0">
-                <span className="text-base font-bold font-serif text-white tracking-wide block leading-none">
-                  LEXORA <span className="text-[#C9A24B]">AI</span>
+                <span className="text-sm font-bold tracking-tight block leading-none font-serif theme-heading">
+                  LEXORA
                 </span>
-                <span className="text-[9px] text-amber-200/80 font-sans tracking-widest uppercase block mt-1">
-                  Judicial Intelligence
+                <span className="text-[9px] font-mono uppercase block mt-1 tracking-wider font-semibold theme-subtext">
+                  Judicial Workstation
                 </span>
               </div>
             )}
@@ -72,54 +84,63 @@ export function Sidebar({
           {mobileOpen && (
             <button
               onClick={onMobileClose}
-              className="p-1 rounded-lg hover:bg-white/10 text-white lg:hidden"
+              className="p-1 rounded hover:opacity-80 lg:hidden"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
           )}
         </div>
 
         {/* Navigation Section */}
-        <nav className="flex-1 overflow-y-auto px-2 py-4 space-y-1.5 scrollbar-thin">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.id}
-              to={item.path}
-              onClick={onMobileClose}
-              className={({ isActive }) =>
-                cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition-all duration-150',
-                  isActive
-                    ? 'bg-[#C9A24B] text-[#1B2C4F] font-extrabold shadow-lg'
-                    : 'text-slate-300 hover:bg-white/10 hover:text-white',
-                  collapsed && !mobileOpen && 'justify-center px-2'
-                )
-              }
-              title={collapsed && !mobileOpen ? item.label : undefined}
-            >
-              <item.icon className="w-4 h-4 shrink-0" />
+        <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-4">
+          {sections.map((sec) => (
+            <div key={sec.name} className="space-y-1">
               {(!collapsed || mobileOpen) && (
-                <span className="truncate flex-1">{item.label}</span>
+                <p className="px-3 text-[10px] font-mono font-semibold uppercase tracking-wider mb-1 theme-subtext">
+                  {sec.name}
+                </p>
               )}
-              {(!collapsed || mobileOpen) && item.badge && (
-                <span className="px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 text-[10px] font-extrabold">
-                  {item.badge}
-                </span>
-              )}
-            </NavLink>
+              {sec.items.map((item) => (
+                <NavLink
+                  key={item.id}
+                  to={item.path}
+                  onClick={onMobileClose}
+                  className={({ isActive }) =>
+                    cn(
+                      'flex items-center gap-2.5 px-3 py-1.5 rounded-sm text-xs font-medium transition-colors',
+                      isActive
+                        ? 'sidebar-nav-active'
+                        : 'sidebar-nav-item',
+                      collapsed && !mobileOpen && 'justify-center px-2'
+                    )
+                  }
+                  title={collapsed && !mobileOpen ? item.label : undefined}
+                >
+                  <item.icon className="w-4 h-4 shrink-0 opacity-70" />
+                  {(!collapsed || mobileOpen) && (
+                    <span className="truncate flex-1">{item.label}</span>
+                  )}
+                  {(!collapsed || mobileOpen) && item.badge && (
+                    <span className="px-1.5 py-0.2 rounded-sm badge-pending text-[10px] font-mono font-semibold">
+                      {item.badge}
+                    </span>
+                  )}
+                </NavLink>
+              ))}
+            </div>
           ))}
         </nav>
 
         {/* User Footer */}
-        <div className="p-3 border-t border-white/15 shrink-0 bg-[#0A1428]">
+        <div className="p-2.5 border-t border-subtle shrink-0 theme-elevated">
           {(!collapsed || mobileOpen) && user && (
-            <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-white/10 border border-white/15 mb-2">
-              <div className="w-8 h-8 rounded-full bg-[#C9A24B] text-[#1B2C4F] flex items-center justify-center text-xs font-extrabold shrink-0 shadow">
+            <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-sm theme-card border border-subtle mb-1.5">
+              <div className="w-6 h-6 rounded-sm theme-primary-btn text-white flex items-center justify-center text-xs font-bold shrink-0">
                 {user.name.charAt(0)}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-bold text-white truncate">{user.name}</p>
-                <p className="text-[10px] text-[#C9A24B] font-semibold capitalize truncate">{user.role}</p>
+                <p className="text-xs font-semibold truncate theme-heading">{user.name}</p>
+                <p className="text-[10px] font-mono capitalize truncate font-semibold theme-subtext">{user.role}</p>
               </div>
             </div>
           )}
@@ -127,22 +148,22 @@ export function Sidebar({
           <button
             onClick={handleLogout}
             className={cn(
-              'flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 w-full transition-colors',
+              'flex items-center gap-2 px-2.5 py-1.5 rounded-sm text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 w-full transition-colors cursor-pointer',
               collapsed && !mobileOpen && 'justify-center px-2'
             )}
             title={collapsed && !mobileOpen ? 'Logout' : undefined}
           >
-            <LogOut className="w-4 h-4 shrink-0" />
-            {(!collapsed || mobileOpen) && <span>Logout</span>}
+            <LogOut className="w-4 h-4 shrink-0 text-rose-600 dark:text-rose-400" />
+            {(!collapsed || mobileOpen) && <span className="text-rose-600 dark:text-rose-400">Logout</span>}
           </button>
         </div>
 
         {/* Collapse Toggle Button */}
         <button
           onClick={onToggleCollapse}
-          className="hidden lg:flex absolute -right-3 top-20 w-6 h-6 rounded-full bg-[#C9A24B] text-[#1B2C4F] border border-white/30 items-center justify-center hover:bg-[#D9B35C] transition-colors shadow-lg z-50 cursor-pointer"
+          className="hidden lg:flex absolute -right-3 top-16 w-5 h-5 rounded-full theme-card items-center justify-center hover:opacity-80 transition-colors z-50 cursor-pointer shadow-xs"
         >
-          {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
+          {collapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
         </button>
       </aside>
     </>

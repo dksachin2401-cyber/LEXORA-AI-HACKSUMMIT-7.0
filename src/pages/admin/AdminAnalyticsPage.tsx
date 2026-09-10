@@ -36,15 +36,15 @@ export const AdminAnalyticsPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 text-white">
+    <div className="space-y-6 animate-fadeIn">
       {/* Header */}
-      <div className="border-b border-white/15 pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+      <div className="border-b border-subtle pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-white flex items-center gap-2">
-            <BarChart3 className="w-6 h-6 text-[#C9A24B]" />
+          <h1 className="text-2xl sm:text-3xl font-serif font-bold theme-heading flex items-center gap-2">
+            <BarChart3 className="w-6 h-6 text-amber-500" />
             National Judicial Analytics & Disposal Rate Dashboard
           </h1>
-          <p className="text-slate-300 text-xs sm:text-sm mt-1">
+          <p className="theme-subtext text-xs sm:text-sm mt-1">
             Executive Performance Metrics, Backlog Forecasts & Bench Clearance Rates
           </p>
         </div>
@@ -53,7 +53,7 @@ export const AdminAnalyticsPage: React.FC = () => {
           <select
             value={timeRange}
             onChange={(e) => setTimeRange(e.target.value)}
-            className="px-3 py-2 bg-[#0F1B33] border border-white/20 rounded-xl text-xs font-bold text-[#C9A24B] outline-none cursor-pointer"
+            className="px-3 py-2 text-xs font-bold rounded cursor-pointer"
           >
             <option value="2026-YTD">Year to Date (2026)</option>
             <option value="Q2-2026">Q2 2026 (Apr-Jun)</option>
@@ -62,9 +62,9 @@ export const AdminAnalyticsPage: React.FC = () => {
 
           <button
             onClick={handleExportAnalytics}
-            className="px-4 py-2 bg-[#C9A24B] hover:bg-[#D9B35C] text-[#1B2C4F] font-bold text-xs rounded-xl shadow-lg flex items-center gap-1.5 cursor-pointer"
+            className="theme-primary-btn px-4 py-2 text-xs flex items-center gap-1.5 cursor-pointer"
           >
-            <Download className="w-4 h-4 text-[#1B2C4F]" />
+            <Download className="w-4 h-4" />
             <span>Export CSV</span>
           </button>
         </div>
@@ -72,52 +72,52 @@ export const AdminAnalyticsPage: React.FC = () => {
 
       {/* Notification */}
       {actionMsg && (
-        <div className="p-3 bg-emerald-500/20 border border-emerald-500/40 text-emerald-200 text-xs rounded-xl flex items-center gap-2">
-          <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+        <div className="p-3 theme-elevated border border-subtle text-emerald-600 dark:text-emerald-400 text-xs rounded flex items-center gap-2">
+          <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
           <span>{actionMsg}</span>
         </div>
       )}
 
       {/* Top Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-[#132240] border border-white/15 p-5 rounded-xl space-y-1">
-          <p className="text-[10px] text-slate-400 font-bold uppercase">National Clearance Rate</p>
-          <h2 className="text-2xl font-bold font-mono text-emerald-400">116.2%</h2>
-          <p className="text-[11px] text-slate-300">Disposals exceed new case filings</p>
+        <div className="theme-card p-5 rounded space-y-1">
+          <p className="text-[10px] theme-subtext font-bold uppercase">National Clearance Rate</p>
+          <h2 className="text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400">116.2%</h2>
+          <p className="text-[11px] theme-subtext">Disposals exceed new case filings</p>
         </div>
 
-        <div className="bg-[#132240] border border-white/15 p-5 rounded-xl space-y-1">
-          <p className="text-[10px] text-slate-400 font-bold uppercase">Total Disposals (2026)</p>
-          <h2 className="text-2xl font-bold font-mono text-[#C9A24B]">10,300 Cases</h2>
-          <p className="text-[11px] text-emerald-400">↑ 14.8% vs Previous Period</p>
+        <div className="theme-card p-5 rounded space-y-1">
+          <p className="text-[10px] theme-subtext font-bold uppercase">Total Disposals (2026)</p>
+          <h2 className="text-2xl font-bold font-mono text-amber-500">10,300 Cases</h2>
+          <p className="text-[11px] text-emerald-600 dark:text-emerald-400">↑ 14.8% vs Previous Period</p>
         </div>
 
-        <div className="bg-[#132240] border border-white/15 p-5 rounded-xl space-y-1">
-          <p className="text-[10px] text-slate-400 font-bold uppercase">Pending Backlog Reduction</p>
-          <h2 className="text-2xl font-bold font-mono text-cyan-400">-1,340 Cases</h2>
-          <p className="text-[11px] text-slate-300">Backlog decreased across High Courts</p>
+        <div className="theme-card p-5 rounded space-y-1">
+          <p className="text-[10px] theme-subtext font-bold uppercase">Pending Backlog Reduction</p>
+          <h2 className="text-2xl font-bold font-mono text-cyan-600 dark:text-cyan-400">-1,340 Cases</h2>
+          <p className="text-[11px] theme-subtext">Backlog decreased across High Courts</p>
         </div>
 
-        <div className="bg-[#132240] border border-white/15 p-5 rounded-xl space-y-1">
-          <p className="text-[10px] text-slate-400 font-bold uppercase">AI Precedent Citation Speed</p>
-          <h2 className="text-2xl font-bold font-mono text-purple-400">0.32 Sec</h2>
-          <p className="text-[11px] text-slate-300">100% Citation Grounding Rate</p>
+        <div className="theme-card p-5 rounded space-y-1">
+          <p className="text-[10px] theme-subtext font-bold uppercase">AI Precedent Citation Speed</p>
+          <h2 className="text-2xl font-bold font-mono text-purple-600 dark:text-purple-400">0.32 Sec</h2>
+          <p className="text-[11px] theme-subtext">100% Citation Grounding Rate</p>
         </div>
       </div>
 
       {/* Monthly Disposal & Filings Trend Table */}
-      <div className="bg-[#132240] border border-white/15 rounded-xl overflow-hidden shadow-xl">
-        <div className="p-4 border-b border-white/15 bg-[#0F1B33] flex justify-between items-center">
-          <h2 className="text-base font-serif font-bold text-white flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-[#C9A24B]" />
+      <div className="theme-card rounded overflow-hidden">
+        <div className="p-4 border-b border-subtle theme-elevated flex justify-between items-center">
+          <h2 className="text-base font-serif font-bold theme-heading flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-amber-500" />
             Monthly Case Filings vs. Disposals Breakdown (2026)
           </h2>
-          <span className="text-xs text-slate-300 font-mono font-bold">Average Clearance: 116.2%</span>
+          <span className="text-xs theme-subtext font-mono font-bold">Average Clearance: 116.2%</span>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left border-collapse">
-            <thead className="bg-[#0A1428] text-slate-300 font-serif uppercase tracking-wider border-b border-white/15">
+            <thead>
               <tr>
                 <th className="px-4 py-3">Month</th>
                 <th className="px-4 py-3">New Filings</th>
@@ -126,14 +126,14 @@ export const AdminAnalyticsPage: React.FC = () => {
                 <th className="px-4 py-3">Net Backlog Shift</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/10">
+            <tbody>
               {monthlyData.map((row, idx) => (
-                <tr key={idx} className="hover:bg-white/5 transition-colors">
-                  <td className="px-4 py-3 font-bold text-[#C9A24B]">{row.month}</td>
-                  <td className="px-4 py-3 font-mono text-white">{row.filed}</td>
-                  <td className="px-4 py-3 font-mono text-emerald-400 font-bold">{row.disposed}</td>
-                  <td className="px-4 py-3 font-mono text-cyan-300 font-extrabold">{row.rate}</td>
-                  <td className="px-4 py-3 font-mono text-emerald-400">-{row.disposed - row.filed} Cases</td>
+                <tr key={idx}>
+                  <td className="px-4 py-3 font-bold text-blue-500">{row.month}</td>
+                  <td className="px-4 py-3 font-mono theme-heading">{row.filed}</td>
+                  <td className="px-4 py-3 font-mono text-emerald-600 dark:text-emerald-400 font-bold">{row.disposed}</td>
+                  <td className="px-4 py-3 font-mono text-cyan-600 dark:text-cyan-400 font-extrabold">{row.rate}</td>
+                  <td className="px-4 py-3 font-mono text-emerald-600 dark:text-emerald-400">-{row.disposed - row.filed} Cases</td>
                 </tr>
               ))}
             </tbody>
@@ -142,18 +142,18 @@ export const AdminAnalyticsPage: React.FC = () => {
       </div>
 
       {/* Bench Performance Matrix */}
-      <div className="bg-[#132240] border border-white/15 rounded-xl overflow-hidden shadow-xl">
-        <div className="p-4 border-b border-white/15 bg-[#0F1B33] flex justify-between items-center">
-          <h2 className="text-base font-serif font-bold text-white flex items-center gap-2">
-            <PieChart className="w-5 h-5 text-[#C9A24B]" />
+      <div className="theme-card rounded overflow-hidden">
+        <div className="p-4 border-b border-subtle theme-elevated flex justify-between items-center">
+          <h2 className="text-base font-serif font-bold theme-heading flex items-center gap-2">
+            <PieChart className="w-5 h-5 text-amber-500" />
             Judicial Bench Clearance Rates & Hearing Efficiency
           </h2>
-          <span className="text-xs text-slate-300">Target: &gt;85% Clearance</span>
+          <span className="text-xs theme-subtext">Target: &gt;85% Clearance</span>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left border-collapse">
-            <thead className="bg-[#0A1428] text-slate-300 font-serif uppercase tracking-wider border-b border-white/15">
+            <thead>
               <tr>
                 <th className="px-4 py-3">Bench Division</th>
                 <th className="px-4 py-3">Presiding Officer</th>
@@ -162,14 +162,14 @@ export const AdminAnalyticsPage: React.FC = () => {
                 <th className="px-4 py-3">Total Cases Managed</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/10">
+            <tbody>
               {benchDisposalData.map((b, idx) => (
-                <tr key={idx} className="hover:bg-white/5 transition-colors">
-                  <td className="px-4 py-3 font-bold text-white">{b.bench}</td>
-                  <td className="px-4 py-3 text-slate-300">{b.judge}</td>
-                  <td className="px-4 py-3 font-mono font-bold text-emerald-400">{b.disposalRate}</td>
-                  <td className="px-4 py-3 font-mono text-amber-300">{b.avgDays}</td>
-                  <td className="px-4 py-3 font-mono text-white">{b.totalCases}</td>
+                <tr key={idx}>
+                  <td className="px-4 py-3 font-bold theme-heading">{b.bench}</td>
+                  <td className="px-4 py-3 theme-subtext">{b.judge}</td>
+                  <td className="px-4 py-3 font-mono font-bold text-emerald-600 dark:text-emerald-400">{b.disposalRate}</td>
+                  <td className="px-4 py-3 font-mono text-amber-500">{b.avgDays}</td>
+                  <td className="px-4 py-3 font-mono theme-heading">{b.totalCases}</td>
                 </tr>
               ))}
             </tbody>

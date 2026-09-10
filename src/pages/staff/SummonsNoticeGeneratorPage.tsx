@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { FileCode, Printer, Download, Send, ShieldCheck, Building, CheckCircle, FileText } from 'lucide-react';
+import { FileCode, Printer, Download, Send, ShieldCheck, Building, CheckCircle, FileText, Save, Loader2 } from 'lucide-react';
+import { api } from '../../services/api';
 
 export const SummonsNoticeGeneratorPage: React.FC = () => {
   const [templateType, setTemplateType] = useState('cpc_summons');
   const [courtName, setCourtName] = useState('IN THE HIGH COURT OF JUDICATURE AT BOMBAY');
+  const [caseId, setCaseId] = useState('1');
   const [caseNumber, setCaseNumber] = useState('CIVIL SUIT NO. 412 OF 2026');
   const [cnrNumber, setCnrNumber] = useState('MHBM010041202026');
   const [petitioner, setPetitioner] = useState('State Bank of India (Commercial Branch)');
@@ -13,7 +15,10 @@ export const SummonsNoticeGeneratorPage: React.FC = () => {
   const [courtroomNo, setCourtroomNo] = useState('Courtroom No. 4 (Bench II)');
   const [presidingOfficer, setPresidingOfficer] = useState('Hon\'ble Justice Rajesh Sharma');
   const [registrarName, setRegistrarName] = useState('Amit Kumar (Bench Registrar)');
+
   const [dispatchStatus, setDispatchStatus] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState('');
 
   const generateSummonsText = () => {
     if (templateType === 'cpc_summons') {
@@ -46,7 +51,7 @@ GIVEN UNDER MY HAND AND THE SEAL OF THIS COURT, THIS 7TH DAY OF AUGUST 2026.
 
 [SEAL OF THE HIGH COURT]
 
-________________────────────────________
+________________________________________
 ${registrarName.toUpperCase()}
 BENCH REGISTRAR / PROCESS ISSUING OFFICER
 ${courtName}
@@ -82,7 +87,7 @@ STATUTORY CONDITIONS & WARNINGS:
 
 GIVEN UNDER MY HAND AND SEAL THIS 7TH DAY OF AUGUST 2026.
 
-________________────────────────________
+________________________________________
 ${registrarName.toUpperCase()}
 REGISTRY OFFICER / BENCH CLERK
 `;
@@ -106,7 +111,7 @@ UNDER INSTRUCTIONS FROM OUR CLIENT, WE HEREBY SERVE YOU WITH THIS STATUTORY LEGA
 
 DATED THIS 7TH DAY OF AUGUST 2026.
 
-________________────────────────________
+________________________________________
 ADVOCATE FOR THE COMPLAINANT
 `;
     }
@@ -122,6 +127,33 @@ YOU ARE HEREBY REQUIRED TO DISCHARGE IN FULL your total statutory liability of I
 DATED THIS 7TH DAY OF AUGUST 2026.
 SECURED CREDITOR AUTHORIZED OFFICER
 `;
+  };
+
+  const handleSaveToDocket = async () => {
+    setSaving(true);
+    setSaveSuccess('');
+    try {
+      const content = generateSummonsText();
+      const docTypeTitle = templateType === 'cpc_summons' ? 'Civil Summons Order V CPC' :
+                            templateType === 'crpc_41a' ? 'Notice of Appearance Sec 41A' :
+                            templateType === 'ni_138' ? 'Demand Notice Sec 138 NI Act' : 'SARFAESI 13(2) Notice';
+
+      const res = await api.saveDraft({
+        caseId: caseId || '1',
+        docType: templateType === 'cpc_summons' ? 'Summons' : 'Notice',
+        title: `${docTypeTitle} - ${caseNumber}`,
+        content
+      });
+
+      if (res.success && res.draft) {
+        setSaveSuccess(`✓ Saved draft notice to case docket (ID: ${res.draft.id}). Status: DRAFT (Human Review Required).`);
+        setTimeout(() => setSaveSuccess(''), 6000);
+      }
+    } catch (err: any) {
+      setSaveSuccess(`Failed to save draft: ${err.message}`);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDispatchProcess = () => {
@@ -140,53 +172,68 @@ SECURED CREDITOR AUTHORIZED OFFICER
   };
 
   return (
-    <div className="space-y-6 text-white">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="border-b border-white/15 pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+      <div className="border-b border-subtle pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-white flex items-center gap-2">
-            <Building className="w-6 h-6 text-[#C9A24B]" />
+          <h1 className="text-2xl sm:text-3xl font-serif font-bold theme-heading flex items-center gap-2">
+            <Building className="w-6 h-6 text-blue-600 dark:text-blue-400" />
             Official Court Summons & Statutory Notice Generator
           </h1>
-          <p className="text-slate-300 text-xs sm:text-sm mt-1">
-            Generate authentic High Court & District Court Summons under Order V CPC, Section 41A CrPC, and Section 138 NI Act with Process Server Coupons
+          <p className="theme-subtext text-xs sm:text-sm mt-1">
+            Generate authentic High Court & District Court Summons under Order V CPC, Section 41A CrPC, and Section 138 NI Act
           </p>
         </div>
 
         <div className="flex gap-2">
           <button
-            onClick={handleDownloadPDF}
-            className="px-4 py-2.5 bg-[#C9A24B] hover:bg-[#D9B35C] text-[#1B2C4F] font-extrabold text-xs rounded-xl shadow-lg flex items-center gap-1.5 cursor-pointer"
+            onClick={handleSaveToDocket}
+            disabled={saving}
+            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-lg flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
           >
-            <Download className="w-4 h-4 text-[#1B2C4F]" />
-            <span>Download Certified Summons</span>
+            {saving ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Save className="w-4 h-4 text-white" />}
+            <span>Save to Docket (Human Review)</span>
+          </button>
+          <button
+            onClick={handleDownloadPDF}
+            className="theme-primary-btn px-4 py-2.5 font-extrabold text-xs rounded-xl shadow-lg flex items-center gap-1.5 cursor-pointer"
+          >
+            <Download className="w-4 h-4" />
+            <span>Download Certified Text</span>
           </button>
         </div>
       </div>
 
       {/* Action Status */}
+      {saveSuccess && (
+        <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-800 dark:text-emerald-200 text-xs rounded-xl flex items-center gap-2">
+          <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+          <span>{saveSuccess}</span>
+        </div>
+      )}
+
       {dispatchStatus && (
-        <div className="p-3.5 bg-emerald-500/20 border border-emerald-500/40 text-emerald-200 text-xs rounded-xl flex items-center gap-2">
-          <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+        <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-800 dark:text-emerald-200 text-xs rounded-xl flex items-center gap-2">
+          <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
           <span>{dispatchStatus}</span>
         </div>
       )}
 
-      {/* Main Grid: Input Controls + Real-Life Render Box */}
+      {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Input Form (5 Cols) */}
-        <div className="lg:col-span-5 bg-[#132240] border border-white/15 rounded-xl p-5 space-y-4 shadow-xl text-xs">
-          <h2 className="text-sm font-serif font-bold text-[#C9A24B] border-b border-white/15 pb-2">
+        {/* Left Input Form */}
+        <div className="lg:col-span-5 theme-card border border-subtle rounded-xl p-5 space-y-4 shadow-xl text-xs">
+          <h2 className="text-sm font-serif font-bold text-blue-600 dark:text-blue-400 border-b border-subtle pb-2">
             Select Official Real-Life Summons Template
           </h2>
 
           <div className="space-y-3">
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Select Statutory Format:</label>
+              <label className="block font-semibold theme-heading mb-1">Select Statutory Format:</label>
               <select
                 value={templateType}
                 onChange={(e) => setTemplateType(e.target.value)}
-                className="w-full px-3 py-2 bg-[#0F1B33] border border-white/20 rounded-lg text-white font-bold cursor-pointer"
+                className="w-full px-3 py-2 theme-elevated border border-subtle rounded-lg theme-heading font-bold cursor-pointer"
               >
                 <option value="cpc_summons">Order V Rule 1 CPC — Official Civil Court Summons</option>
                 <option value="crpc_41a">Section 41A CrPC — Official Notice of Appearance</option>
@@ -196,110 +243,122 @@ SECURED CREDITOR AUTHORIZED OFFICER
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Court Establishment:</label>
+              <label className="block font-semibold theme-heading mb-1">Court Establishment:</label>
               <input
                 type="text"
                 value={courtName}
                 onChange={(e) => setCourtName(e.target.value)}
-                className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white font-bold"
+                className="w-full px-3 py-2 theme-elevated border border-subtle rounded-lg theme-heading font-bold"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block font-semibold text-slate-300 mb-1">Case No:</label>
+                <label className="block font-semibold theme-heading mb-1">Case No:</label>
                 <input
                   type="text"
                   value={caseNumber}
                   onChange={(e) => setCaseNumber(e.target.value)}
-                  className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white font-mono"
+                  className="w-full px-3 py-2 theme-elevated border border-subtle rounded-lg theme-heading font-mono"
                 />
               </div>
               <div>
-                <label className="block font-semibold text-slate-300 mb-1">CNR No:</label>
+                <label className="block font-semibold theme-heading mb-1">CNR No:</label>
                 <input
                   type="text"
                   value={cnrNumber}
                   onChange={(e) => setCnrNumber(e.target.value)}
-                  className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white font-mono"
+                  className="w-full px-3 py-2 theme-elevated border border-subtle rounded-lg theme-heading font-mono"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Petitioner / Plaintiff Name:</label>
+              <label className="block font-semibold theme-heading mb-1">Petitioner / Plaintiff Name:</label>
               <input
                 type="text"
                 value={petitioner}
                 onChange={(e) => setPetitioner(e.target.value)}
-                className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white font-bold"
+                className="w-full px-3 py-2 theme-elevated border border-subtle rounded-lg theme-heading font-bold"
               />
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Respondent / Defendant Name:</label>
+              <label className="block font-semibold theme-heading mb-1">Respondent / Defendant Name:</label>
               <input
                 type="text"
                 value={respondent}
                 onChange={(e) => setRespondent(e.target.value)}
-                className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white font-bold"
+                className="w-full px-3 py-2 theme-elevated border border-subtle rounded-lg theme-heading font-bold"
               />
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Respondent Full Postal Address:</label>
+              <label className="block font-semibold theme-heading mb-1">Respondent Full Postal Address:</label>
               <textarea
                 rows={2}
                 value={respondentAddress}
                 onChange={(e) => setRespondentAddress(e.target.value)}
-                className="w-full p-2.5 bg-white/10 border border-white/20 rounded-lg text-white text-xs outline-none"
+                className="w-full p-2.5 theme-elevated border border-subtle rounded-lg theme-heading text-xs outline-none"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block font-semibold text-slate-300 mb-1">Hearing Date:</label>
+                <label className="block font-semibold theme-heading mb-1">Hearing Date:</label>
                 <input
                   type="date"
                   value={hearingDate}
                   onChange={(e) => setHearingDate(e.target.value)}
-                  className="w-full px-3 py-2 bg-[#0F1B33] border border-white/20 rounded-lg text-white font-mono"
+                  className="w-full px-3 py-2 theme-elevated border border-subtle rounded-lg theme-heading font-mono"
                 />
               </div>
               <div>
-                <label className="block font-semibold text-slate-300 mb-1">Courtroom No:</label>
+                <label className="block font-semibold theme-heading mb-1">Courtroom No:</label>
                 <input
                   type="text"
                   value={courtroomNo}
                   onChange={(e) => setCourtroomNo(e.target.value)}
-                  className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white"
+                  className="w-full px-3 py-2 theme-elevated border border-subtle rounded-lg theme-heading"
                 />
               </div>
             </div>
 
-            <button
-              onClick={handleDispatchProcess}
-              className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-extrabold text-xs rounded-xl shadow flex items-center justify-center gap-2 cursor-pointer mt-2"
-            >
-              <Send className="w-4 h-4 text-slate-950" />
-              <span>Dispatch Summons to Process Server (Bailiff)</span>
-            </button>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={handleSaveToDocket}
+                disabled={saving}
+                className="flex-1 py-3 theme-primary-btn font-bold text-xs rounded-xl shadow flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                <Save className="w-4 h-4" />
+                <span>Save Draft to Docket</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleDispatchProcess}
+                className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <Send className="w-4 h-4 text-white" />
+                <span>Dispatch Summons</span>
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Right Real-Life Document Preview (7 Cols) */}
-        <div className="lg:col-span-7 bg-[#132240] border border-white/15 rounded-xl p-5 space-y-4 shadow-xl">
-          <div className="flex justify-between items-center border-b border-white/15 pb-2">
-            <h2 className="text-sm font-serif font-bold text-white flex items-center gap-2">
-              <FileText className="w-4 h-4 text-[#C9A24B]" />
+        {/* Right Document Preview */}
+        <div className="lg:col-span-7 theme-card border border-subtle rounded-xl p-5 space-y-4 shadow-xl">
+          <div className="flex justify-between items-center border-b border-subtle pb-2">
+            <h2 className="text-sm font-serif font-bold theme-heading flex items-center gap-2">
+              <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
               Official Judicial Format Render (Real-Life Court Template)
             </h2>
-            <span className="text-[10px] px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded font-mono font-bold">
+            <span className="text-[10px] px-2 py-0.5 badge-supported rounded font-mono font-bold">
               CPC Compliant
             </span>
           </div>
 
-          <div className="p-6 bg-[#0F1B33] border border-white/20 rounded-xl font-mono text-xs text-slate-100 whitespace-pre-wrap leading-relaxed overflow-x-auto shadow-inner border-l-4 border-l-[#C9A24B]">
+          <div className="p-6 theme-elevated border border-subtle rounded-xl font-mono text-xs theme-heading whitespace-pre-wrap leading-relaxed overflow-x-auto shadow-inner border-l-4 border-l-blue-600 dark:border-l-blue-400">
             {generateSummonsText()}
           </div>
         </div>

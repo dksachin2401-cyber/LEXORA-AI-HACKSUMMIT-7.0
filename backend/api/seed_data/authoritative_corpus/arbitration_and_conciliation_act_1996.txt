@@ -1,0 +1,23 @@
+ARBITRATION AND CONCILIATION ACT, 1996 — ACT NO. 26 OF 1996
+Source: Ministry of Law and Justice / Legislative Department / India Code
+Authority Level: 1 (Primary Commercial Arbitration Statute)
+Jurisdiction: Republic of India
+Status: IN_FORCE
+
+PART I — ARBITRATION
+
+Section 9: Interim measures, etc., by Court.
+(1) A party may, before or during arbitral proceedings or at any time after the making of the arbitral award but before it is enforced in accordance with section 36, apply to a court—
+(a) for the appointment of a guardian for a minor or person of unsound mind for the purposes of arbitral proceedings; or
+(b) for an interim measure of protection in respect of any of the following matters, namely:—
+(i) the preservation, interim custody or sale of any goods which are the subject-matter of the arbitration agreement;
+(ii) securing the amount in dispute in the arbitration;
+(iii) the detention, preservation or inspection of any property or thing which is the subject-matter of the dispute in arbitration.
+
+Section 11: Appointment of arbitrators.
+(1) A person of any nationality may be an arbitrator, unless otherwise agreed by the parties.
+(6) Where, under an appointment procedure agreed upon by the parties, a party fails to act as required under that procedure, the party may request the Supreme Court or the High Court or any person or institution designated by such Court to take the necessary measure, unless the agreement on the appointment procedure provides other means for securing the appointment.
+
+Section 34: Application for setting aside arbitral award.
+(1) Recourse to a Court against an arbitral award may be made only by an application for setting aside such award in accordance with sub-section (2) and sub-section (3).
+(2) An arbitral award may be set aside by the Court only if the party making the application furnishes proof that a party was under some incapacity, or the arbitration agreement is not valid under the law, or the arbitral award deals with a dispute not contemplated by or not falling within the terms of the submission to arbitration.

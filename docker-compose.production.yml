@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  # Nginx Reverse Proxy & TLS Termination (Public Entrypoint)
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile.nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - nginx_certs:/etc/nginx/certs:ro
+      - ./dist:/usr/share/nginx/html:ro
+    networks:
+      - frontend_net
+    depends_on:
+      - express
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+  # Express API Gateway & Application Server (Private)
+  express:
+    build:
+      context: ./server
+      dockerfile: Dockerfile.server
+    # NO public port mapping — accessible ONLY via Nginx on frontend_net
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - FASTAPI_BASE_URL=http://fastapi:8000
+      - DATABASE_URL=file:/app/prisma/dev.db
+    env_file:
+      - ./server/.env
+    volumes:
+      - server_uploads:/app/uploads
+      - server_db:/app/prisma
+      - backups_data:/app/backups
+    networks:
+      - frontend_net
+      - backend_net
+    depends_on:
+      - fastapi
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+
+  # Python FastAPI AI & RAG Engine (Isolated Private Microservice)
+  fastapi:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.backend
+    # NO public port mapping — accessible ONLY to Express on backend_net
+    environment:
+      - ENVIRONMENT=production
+      - CHROMA_DATA_PATH=/app/api/rag/chroma_db
+    env_file:
+      - ./server/.env
+    volumes:
+      - chroma_data:/app/api/rag/chroma_db
+    networks:
+      - backend_net
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2048M
+
+volumes:
+  server_uploads:
+  server_db:
+  chroma_data:
+  nginx_certs:
+  backups_data:
+
+networks:
+  frontend_net:
+    driver: bridge
+  backend_net:
+    driver: bridge
+    internal: true # Isolated internal network: no external internet ingress/egress for AI backend

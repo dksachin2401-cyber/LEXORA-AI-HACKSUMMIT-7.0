@@ -1,0 +1,22 @@
+SECURITISATION AND RECONSTRUCTION OF FINANCIAL ASSETS AND ENFORCEMENT OF SECURITY INTEREST ACT, 2002 — ACT NO. 54 OF 2002
+Source: Ministry of Finance / Legislative Department / India Code
+Authority Level: 1 (Primary Financial & Security Enforcement Statute)
+Jurisdiction: Republic of India
+Status: IN_FORCE
+Source URL: https://www.indiacode.nic.in/handle/123456789/2006
+
+CHAPTER III — ENFORCEMENT OF SECURITY INTEREST
+
+Section 13: Enforcement of security interest.
+(1) Notwithstanding anything contained in section 69 or section 69A of the Transfer of Property Act, 1882 (4 of 1882), any security interest created in favour of any secured creditor may be enforced, without the intervention of the court or tribunal, by such creditor in accordance with the provisions of this Act.
+(2) Where any borrower, who is under a liability to a secured creditor under a security agreement, makes any default in repayment of secured debt or any instalment thereof, and his account in respect of such debt is classified by the secured creditor as non-performing asset, then, the secured creditor may require the borrower by notice in writing to discharge in full his liabilities to the secured creditor within sixty days from the date of notice failing which the secured creditor shall be entitled to exercise all or any of the rights under sub-section (4).
+(3) The notice referred to in sub-section (2) shall give details of the amount payable by the borrower and the secured assets intended to be enforced by the secured creditor in the event of non-payment of secured debts by the borrower.
+(3A) If, on receipt of the notice under sub-section (2), the borrower makes any representation or raises any objection, the secured creditor shall consider such representation or objection and if the secured creditor comes to the conclusion that such representation or objection is not acceptable or tenable, he shall communicate within fifteen days of receipt of such representation or objection the reasons for non-acceptance of the representation or objection to the borrower.
+(4) In case the borrower fails to discharge his liability in full within the period specified in sub-section (2), the secured creditor may take recourse to one or more of the following measures to recover his secured debt, namely:—
+(a) take possession of the secured assets of the borrower including the right to transfer by way of lease, assignment or sale for realising the secured asset;
+(b) take over the management of the business of the borrower including the right to transfer by way of lease, assignment or sale for realising the secured asset;
+(c) appoint any person to manage the secured assets the possession of which has been taken over by the secured creditor;
+(d) require at any time by notice in writing, any person who has acquired any of the secured assets from the borrower and from whom any money is due or may become due to the borrower, to pay the secured creditor so much of the money as is sufficient to pay the secured debt.
+
+Section 17: Application against measures to recover secured debts.
+(1) Any person (including borrower), aggrieved by any of the measures referred to in sub-section (4) of section 13 taken by the secured creditor or his authorised officer under this Chapter, may make an application along with such fee, as may be prescribed, to the Debts Recovery Tribunal having jurisdiction in the matter within forty-five days from the date on which such measure had been taken.

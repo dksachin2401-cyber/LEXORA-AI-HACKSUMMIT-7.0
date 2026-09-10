@@ -9,22 +9,22 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 
 const variantClasses: Record<string, string> = {
   default:
-    'bg-amber-500 text-white hover:bg-amber-600 shadow-sm',
+    'theme-primary-btn',
   outline:
-    'border border-slate-200 dark:border-white/10 bg-transparent hover:bg-slate-100 dark:hover:bg-white/5 text-slate-900 dark:text-white',
+    'theme-secondary-btn',
   ghost:
-    'bg-transparent hover:bg-slate-100 dark:hover:bg-white/5 text-slate-900 dark:text-white',
+    'bg-transparent hover:bg-slate-200/60 dark:hover:bg-slate-800/80 text-[var(--text-main)]',
   link:
-    'bg-transparent text-amber-500 hover:text-amber-600 underline-offset-4 hover:underline',
+    'bg-transparent text-[var(--primary-accent)] hover:underline underline-offset-4',
   destructive:
-    'bg-red-500 text-white hover:bg-red-600 shadow-sm',
+    'bg-rose-700 dark:bg-rose-800 text-white hover:bg-rose-800 border border-rose-900',
 };
 
 const sizeClasses: Record<string, string> = {
-  default: 'h-10 px-5 py-2 text-sm',
-  sm: 'h-8 px-3 py-1 text-xs',
-  lg: 'h-12 px-8 py-3 text-base',
-  icon: 'h-10 w-10',
+  default: 'h-9 px-4 py-2 text-xs font-semibold',
+  sm: 'h-7 px-3 py-1 text-xs font-medium',
+  lg: 'h-11 px-6 py-2.5 text-sm font-semibold',
+  icon: 'h-8 w-8 text-xs',
 };
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
@@ -32,7 +32,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <button
         className={cn(
-          'inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50 disabled:pointer-events-none disabled:opacity-50 cursor-pointer',
+          'inline-flex items-center justify-center gap-1.5 rounded-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#285C7A] dark:focus-visible:ring-[#6FA7C5] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer',
           variantClasses[variant],
           sizeClasses[size],
           className

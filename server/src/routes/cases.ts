@@ -1,35 +1,206 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { authenticateToken, AuthRequest } from '../middleware/auth.js';
+import { authenticateToken, requireRole, optionalAuth, AuthRequest } from '../middleware/auth.js';
+import { encryptField, decryptField } from '../utils/fieldEncryption.js';
 
 const router = Router();
 const prisma = new PrismaClient();
 
-// GET /api/cases
-router.get('/', async (req: Request, res: Response) => {
+// GET /api/cases/public/search - Public e-Courts Citizen Case Lookup
+router.get('/public/search', optionalAuth, async (req: Request, res: Response) => {
   try {
-    const { status, division, priority, search } = req.query;
+    const q = String(req.query.q || req.query.search || '').trim();
+
+    if (!q) {
+      return res.status(400).json({ error: 'Search query parameter (q) is required' });
+    }
+
+    const cases = await prisma.case.findMany({
+      where: {
+        OR: [
+          { caseNumber: { contains: q } },
+          { title: { contains: q } },
+          { petitioner: { contains: q } },
+          { respondent: { contains: q } },
+        ],
+      },
+      select: {
+        id: true,
+        caseNumber: true,
+        title: true,
+        description: true,
+        status: true,
+        priority: true,
+        division: true,
+        petitioner: true,
+        respondent: true,
+        filingDate: true,
+        nextHearing: true,
+        court: true,
+        type: true,
+        hearings: {
+          select: {
+            id: true,
+            date: true,
+            time: true,
+            courtRoom: true,
+            status: true,
+            type: true,
+          },
+          orderBy: { date: 'asc' },
+        },
+        judge: { select: { id: true, name: true, designation: true } },
+      },
+      take: 10,
+    });
+
+    const decryptedCases = cases.map(c => ({
+      ...c,
+      description: decryptField(c.description) || ''
+    }));
+
+    return res.json(decryptedCases);
+  } catch (error) {
+    console.error('Public case search error:', error);
+    return res.status(500).json({ error: 'LIVE API ERROR — Unable to retrieve case information.' });
+  }
+});
+
+// ── 18.4 CITIZEN DOWNLOAD ORDERS ─────────────────────────────────────────────
+// GET /api/cases/public/:id/orders - Expose only approved public orders/documents
+router.get('/public/:id/orders', optionalAuth, async (req: Request, res: Response) => {
+  try {
+    const caseId = String(req.params.id);
+
+    // Verify case exists
+    const c = await prisma.case.findFirst({
+      where: { OR: [{ id: caseId }, { caseNumber: caseId }] }
+    });
+
+    if (!c) {
+      return res.status(404).json({ error: 'Case not found', message: 'No public case record matching ID.' });
+    }
+
+    // Retrieve ONLY APPROVED public draft orders
+    const approvedOrders = await prisma.draftOrder.findMany({
+      where: {
+        caseId: c.id,
+        status: 'APPROVED'
+      },
+      select: {
+        id: true,
+        title: true,
+        docType: true,
+        content: true,
+        status: true,
+        signedAt: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    // Also include indexed public documents if available
+    const publicDocs = await prisma.document.findMany({
+      where: {
+        caseId: c.id,
+        status: 'INDEXED'
+      },
+      select: {
+        id: true,
+        fileName: true,
+        filePath: true,
+        fileSize: true,
+        uploadedAt: true
+      },
+      orderBy: { uploadedAt: 'desc' }
+    });
+
+    return res.json({
+      success: true,
+      caseNumber: c.caseNumber,
+      title: c.title,
+      orders: approvedOrders,
+      documents: publicDocs,
+      count: approvedOrders.length + publicDocs.length,
+      message: (approvedOrders.length === 0 && publicDocs.length === 0) ? 'No public orders available.' : undefined
+    });
+  } catch (error) {
+    console.error('Fetch public orders error:', error);
+    return res.status(500).json({ error: 'Failed to fetch public orders' });
+  }
+});
+
+// GET /api/cases - Server-side Authorization Filtered & Paginated List
+router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { status, division, priority, search, page, limit } = req.query;
 
     const where: any = {};
     if (status && status !== 'All') where.status = String(status);
     if (division) where.division = String(division);
     if (priority) where.priority = String(priority);
 
-    if (search) {
-      where.OR = [
-        { caseNumber: { contains: String(search) } },
-        { title: { contains: String(search) } },
-        { petitioner: { contains: String(search) } },
-        { respondent: { contains: String(search) } },
-      ];
+    // Server-side Authorization Filtering:
+    // If authenticated user is a LAWYER, strictly scope queries to cases assigned to that lawyer.
+    if (req.user && req.user.role.toUpperCase() === 'LAWYER') {
+      where.lawyerId = req.user.id;
     }
 
+    if (search) {
+      const searchStr = String(search);
+      where.AND = where.AND || [];
+      where.AND.push({
+        OR: [
+          { caseNumber: { contains: searchStr } },
+          { title: { contains: searchStr } },
+          { petitioner: { contains: searchStr } },
+          { respondent: { contains: searchStr } },
+        ],
+      });
+    }
+
+    // Check if pagination was requested
+    const pageNum = page ? Math.max(1, parseInt(String(page), 10)) : null;
+    const limitNum = limit ? Math.max(1, parseInt(String(limit), 10)) : null;
+
+    if (pageNum && limitNum) {
+      const skip = (pageNum - 1) * limitNum;
+      const total = await prisma.case.count({ where });
+      const totalPages = Math.ceil(total / limitNum);
+
+      const cases = await prisma.case.findMany({
+        where,
+        skip,
+        take: limitNum,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          hearings: true,
+          aiAnalysis: true,
+          judge: { select: { id: true, name: true, designation: true } },
+          lawyer: { select: { id: true, name: true, designation: true } },
+        },
+      });
+
+      return res.json({
+        data: cases,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total,
+          totalPages
+        }
+      });
+    }
+
+    // Default backward compatible array response when page/limit not passed
     const cases = await prisma.case.findMany({
       where,
       orderBy: { createdAt: 'desc' },
       include: {
         hearings: true,
         aiAnalysis: true,
+        judge: { select: { id: true, name: true, designation: true } },
+        lawyer: { select: { id: true, name: true, designation: true } },
       },
     });
 
@@ -40,18 +211,20 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/cases/:id
-router.get('/:id', async (req: Request, res: Response) => {
+// GET /api/cases/:id - Individual Case Authorization Check
+router.get('/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
-    const { id } = req.params;
+    const caseId = String(req.params.id);
     const c = await prisma.case.findFirst({
       where: {
-        OR: [{ id }, { caseNumber: id }],
+        OR: [{ id: caseId }, { caseNumber: caseId }],
       },
       include: {
         hearings: true,
         documents: true,
         aiAnalysis: true,
+        draftOrders: true,
+        evidences: true,
         judge: { select: { id: true, name: true, designation: true } },
         lawyer: { select: { id: true, name: true, designation: true } },
       },
@@ -61,13 +234,23 @@ router.get('/:id', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Case not found' });
     }
 
-    return res.json(c);
+    // Server-Side Authorization: If authenticated user is a LAWYER, prevent access to another lawyer's restricted case
+    if (req.user && req.user.role.toUpperCase() === 'LAWYER') {
+      if (c.lawyerId && c.lawyerId !== req.user.id) {
+        return res.status(403).json({ error: 'Access denied: Case is assigned to another legal counsel' });
+      }
+    }
+
+    return res.json({
+      ...c,
+      description: decryptField(c.description) || ''
+    });
   } catch (error) {
     return res.status(500).json({ error: 'Failed to fetch case details' });
   }
 });
 
-// POST /api/cases
+// POST /api/cases - Authenticated Case Creation
 router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     const {
@@ -90,7 +273,7 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
       data: {
         caseNumber,
         title,
-        description: description || '',
+        description: encryptField(description || '') || '',
         status: 'Pending',
         priority: priority || 'Medium',
         division: division || 'Criminal',
@@ -112,12 +295,30 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
   }
 });
 
-// PUT /api/cases/:id
-router.put('/:id', authenticateToken, async (req: Request, res: Response) => {
+// PUT /api/cases/:id - Authenticated & Ownership Checked Update
+router.put('/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
-    const { id } = req.params;
+    const caseId = String(req.params.id);
+
+    // Verify target case exists
+    const existing = await prisma.case.findUnique({ where: { id: caseId } });
+    if (!existing) {
+      return res.status(404).json({ error: 'Case not found' });
+    }
+
+    // Role-based authorization: Only assigned judge, assigned lawyer, staff, or admin can modify case
+    if (req.user) {
+      const isRoleAllowed = ['ADMIN', 'COURT_STAFF', 'STAFF'].includes(req.user.role.toUpperCase()) ||
+        (req.user.role.toUpperCase() === 'JUDGE' && (!existing.judgeId || existing.judgeId === req.user.id)) ||
+        (req.user.role.toUpperCase() === 'LAWYER' && (!existing.lawyerId || existing.lawyerId === req.user.id));
+
+      if (!isRoleAllowed) {
+        return res.status(403).json({ error: 'Access denied: You do not have permission to modify this case record' });
+      }
+    }
+
     const updated = await prisma.case.update({
-      where: { id },
+      where: { id: caseId },
       data: req.body,
     });
     return res.json(updated);
@@ -126,11 +327,11 @@ router.put('/:id', authenticateToken, async (req: Request, res: Response) => {
   }
 });
 
-// DELETE /api/cases/:id
-router.delete('/:id', authenticateToken, async (req: Request, res: Response) => {
+// DELETE /api/cases/:id - Restricted to Judicial Officers, Staff & Admins
+router.delete('/:id', authenticateToken, requireRole(['ADMIN', 'JUDGE', 'COURT_STAFF', 'STAFF']), async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
-    await prisma.case.delete({ where: { id } });
+    const caseId = String(req.params.id);
+    await prisma.case.delete({ where: { id: caseId } });
     return res.json({ success: true, message: 'Case deleted successfully' });
   } catch (error) {
     return res.status(500).json({ error: 'Failed to delete case' });

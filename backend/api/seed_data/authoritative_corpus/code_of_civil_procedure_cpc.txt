@@ -1,0 +1,19 @@
+CODE OF CIVIL PROCEDURE, 1908 (CPC) — ACT NO. 5 OF 1908
+Source: Legislative Department, Ministry of Law and Justice / India Code
+Authority Level: 1 (Primary Civil Procedure Code)
+Jurisdiction: Republic of India
+Status: IN_FORCE
+
+Section 9: Courts to try all civil suits unless barred.
+The Courts shall (subject to the provisions herein contained) have jurisdiction to try all suits of a civil nature excepting suits of which their cognizance is either expressly or impliedly barred.
+
+Section 11: Res judicata.
+No Court shall try any suit or issue in which the matter directly and substantially in issue has been directly and substantially in issue in a former suit between the same parties, or between parties under whom they or any of them claim, litigating under the same title, in a Court competent to try such subsequent suit or the suit in which such issue has been subsequently raised, and has been heard and finally decided by such Court.
+
+ORDER V — ISSUE AND SERVICE OF SUMMONS
+
+Rule 1: Summons.
+(1) When a suit has been duly instituted, a summons may be issued to the defendant to appear and answer the claim and to file the written statement of his defence, if any, within thirty days from the date of service of summons on that defendant.
+
+Rule 9: Delivery of summons by Court.
+(1) Where the defendant resides within the jurisdiction of the Court in which the suit is instituted, or has an agent resident within that jurisdiction who is empowered to accept the service of the summons, the summons shall be delivered to the proper officer to be served by him or one of his subordinates or by such courier services as are approved by the High Court.

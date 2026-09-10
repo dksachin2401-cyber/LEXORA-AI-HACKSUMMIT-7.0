@@ -73,15 +73,15 @@ export const NationalJudicialStatsPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 text-white">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="border-b border-white/15 pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="border-b border-subtle pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-white flex items-center gap-2">
-            <BarChart3 className="w-6 h-6 text-[#C9A24B]" />
+          <h1 className="text-2xl sm:text-3xl font-serif font-bold theme-heading flex items-center gap-2">
+            <BarChart3 className="w-6 h-6 text-blue-600 dark:text-blue-400" />
             National Judicial Data Grid (NJDG Live Transparency)
           </h1>
-          <p className="text-slate-300 text-xs sm:text-sm mt-1">
+          <p className="theme-subtext text-xs sm:text-sm mt-1">
             Real-time Case Disposal Speeds, Clearance Rates, and Pending Backlog Index calculated directly from judicial registries
           </p>
         </div>
@@ -90,67 +90,67 @@ export const NationalJudicialStatsPage: React.FC = () => {
           <button
             onClick={handleRefreshLiveData}
             disabled={isRefreshing}
-            className="px-3.5 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 cursor-pointer"
+            className="theme-secondary-btn px-3.5 py-2 text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer"
           >
-            <RefreshCw className={`w-3.5 h-3.5 text-[#C9A24B] ${isRefreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 text-blue-600 dark:text-blue-400 ${isRefreshing ? 'animate-spin' : ''}`} />
             <span>{isRefreshing ? 'Syncing NJDG Grid...' : 'Refresh Live Data'}</span>
           </button>
 
           <button
             onClick={handleExportCSV}
-            className="px-4 py-2 bg-[#C9A24B] hover:bg-[#D9B35C] text-[#1B2C4F] font-bold text-xs rounded-xl shadow flex items-center gap-1.5 cursor-pointer"
+            className="theme-primary-btn px-4 py-2 text-xs font-bold rounded-xl shadow flex items-center gap-1.5 cursor-pointer"
           >
-            <Download className="w-3.5 h-3.5 text-[#1B2C4F]" />
+            <Download className="w-3.5 h-3.5" />
             <span>Export NJDG CSV</span>
           </button>
         </div>
       </div>
 
       {/* Live Sync Status Banner */}
-      <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-xs text-emerald-200 flex justify-between items-center">
+      <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-xs text-emerald-800 dark:text-emerald-200 flex justify-between items-center">
         <div className="flex items-center gap-2">
-          <Activity className="w-4 h-4 text-emerald-400 animate-pulse" />
+          <Activity className="w-4 h-4 text-emerald-600 dark:text-emerald-400 animate-pulse" />
           <span>Real-time NJDG Data Grid Connection Active — Live Sync Timestamp: <strong>{lastSync}</strong></span>
         </div>
-        <span className="font-mono text-[10px] text-emerald-400 font-bold hidden sm:block">Phase III e-Courts Verified</span>
+        <span className="font-mono text-[10px] text-emerald-600 dark:text-emerald-400 font-bold hidden sm:block">Phase III e-Courts Verified</span>
       </div>
 
       {/* Top Dynamic Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-[#132240] border border-white/15 p-5 rounded-xl space-y-1 shadow-xl">
-          <p className="text-[10px] text-slate-400 font-bold uppercase">National Clearance Rate</p>
-          <h2 className="text-2xl font-bold font-mono text-emerald-400">{avgClearanceRate}%</h2>
-          <p className="text-[11px] text-slate-300">Disposals exceeding new case filings</p>
+        <div className="theme-card border border-subtle p-5 rounded-xl space-y-1 shadow-xl">
+          <p className="text-[10px] theme-subtext font-bold uppercase">National Clearance Rate</p>
+          <h2 className="text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400">{avgClearanceRate}%</h2>
+          <p className="text-[11px] theme-subtext">Disposals exceeding new case filings</p>
         </div>
 
-        <div className="bg-[#132240] border border-white/15 p-5 rounded-xl space-y-1 shadow-xl">
-          <p className="text-[10px] text-slate-400 font-bold uppercase">Total Disposals (2026 YTD)</p>
-          <h2 className="text-2xl font-bold font-mono text-[#C9A24B]">{totalDisposed.toLocaleString()}</h2>
-          <p className="text-[11px] text-emerald-400">Across High Courts & District Courts</p>
+        <div className="theme-card border border-subtle p-5 rounded-xl space-y-1 shadow-xl">
+          <p className="text-[10px] theme-subtext font-bold uppercase">Total Disposals (2026 YTD)</p>
+          <h2 className="text-2xl font-bold font-mono text-blue-600 dark:text-blue-400">{totalDisposed.toLocaleString()}</h2>
+          <p className="text-[11px] text-emerald-600 dark:text-emerald-400">Across High Courts & District Courts</p>
         </div>
 
-        <div className="bg-[#132240] border border-white/15 p-5 rounded-xl space-y-1 shadow-xl">
-          <p className="text-[10px] text-slate-400 font-bold uppercase">Average Resolution Time</p>
-          <h2 className="text-2xl font-bold font-mono text-cyan-400">{avgSpeed} Days</h2>
-          <p className="text-[11px] text-slate-300">AI-assisted hearing scheduling speed</p>
+        <div className="theme-card border border-subtle p-5 rounded-xl space-y-1 shadow-xl">
+          <p className="text-[10px] theme-subtext font-bold uppercase">Average Resolution Time</p>
+          <h2 className="text-2xl font-bold font-mono text-cyan-600 dark:text-cyan-400">{avgSpeed} Days</h2>
+          <p className="text-[11px] theme-subtext">AI-assisted hearing scheduling speed</p>
         </div>
 
-        <div className="bg-[#132240] border border-white/15 p-5 rounded-xl space-y-1 shadow-xl">
-          <p className="text-[10px] text-slate-400 font-bold uppercase">Active Connected Benches</p>
-          <h2 className="text-2xl font-bold font-mono text-purple-400">18,720 Benches</h2>
-          <p className="text-[11px] text-slate-300">Integrated via High Court & DRT grids</p>
+        <div className="theme-card border border-subtle p-5 rounded-xl space-y-1 shadow-xl">
+          <p className="text-[10px] theme-subtext font-bold uppercase">Active Connected Benches</p>
+          <h2 className="text-2xl font-bold font-mono text-purple-600 dark:text-purple-400">18,720 Benches</h2>
+          <p className="text-[11px] theme-subtext">Integrated via High Court & DRT grids</p>
         </div>
       </div>
 
       {/* Filter Control Bar */}
-      <div className="bg-[#132240] border border-white/15 rounded-xl p-4 flex flex-col sm:flex-row justify-between items-center gap-3 shadow-lg">
+      <div className="theme-card border border-subtle rounded-xl p-4 flex flex-col sm:flex-row justify-between items-center gap-3 shadow-lg">
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Filter className="w-4 h-4 text-[#C9A24B]" />
-          <span className="text-xs font-bold text-slate-300">Filter Court Establishment:</span>
+          <Filter className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+          <span className="text-xs font-bold theme-subtext">Filter Court Establishment:</span>
           <select
             value={selectedEstablishment}
             onChange={(e) => setSelectedEstablishment(e.target.value)}
-            className="px-3.5 py-2 bg-[#0F1B33] border border-white/20 rounded-lg text-xs font-bold text-[#C9A24B] outline-none cursor-pointer"
+            className="px-3.5 py-2 theme-elevated border border-subtle rounded-lg text-xs font-bold theme-heading outline-none cursor-pointer"
           >
             <option value="ALL">All National Courts</option>
             <option value="sc">Supreme Court of India</option>
@@ -161,24 +161,24 @@ export const NationalJudicialStatsPage: React.FC = () => {
           </select>
         </div>
 
-        <span className="text-xs text-slate-400">
+        <span className="text-xs theme-subtext">
           Showing <strong>{filteredStats.length}</strong> of <strong>{courtStats.length}</strong> Court Establishments
         </span>
       </div>
 
       {/* National Table */}
-      <div className="bg-[#132240] border border-white/15 rounded-xl overflow-hidden shadow-xl">
-        <div className="p-4 border-b border-white/15 bg-[#0F1B33] flex justify-between items-center">
-          <h2 className="text-base font-serif font-bold text-white flex items-center gap-2">
-            <Globe className="w-5 h-5 text-[#C9A24B]" />
+      <div className="theme-card border border-subtle rounded-xl overflow-hidden shadow-xl">
+        <div className="p-4 border-b border-subtle theme-elevated flex justify-between items-center">
+          <h2 className="text-base font-serif font-bold theme-heading flex items-center gap-2">
+            <Globe className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             Courtwise Disposal Speed & Pending Backlog Index
           </h2>
-          <span className="text-xs text-emerald-400 font-mono font-bold">Public Data Grid Transparency</span>
+          <span className="text-xs text-emerald-600 dark:text-emerald-400 font-mono font-bold">Public Data Grid Transparency</span>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left border-collapse">
-            <thead className="bg-[#0A1428] text-slate-300 font-serif uppercase tracking-wider border-b border-white/15">
+            <thead className="theme-elevated theme-subtext font-serif uppercase tracking-wider border-b border-subtle">
               <tr>
                 <th className="px-4 py-3">Court Establishment</th>
                 <th className="px-4 py-3">Pending Backlog</th>
@@ -187,14 +187,14 @@ export const NationalJudicialStatsPage: React.FC = () => {
                 <th className="px-4 py-3">Clearance Rate</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/10">
+            <tbody className="divide-y divide-subtle">
               {filteredStats.map((c) => (
-                <tr key={c.id} className="hover:bg-white/5 transition-colors">
-                  <td className="px-4 py-3 font-bold text-[#C9A24B]">{c.court}</td>
-                  <td className="px-4 py-3 font-mono text-amber-300">{c.pending.toLocaleString()}</td>
-                  <td className="px-4 py-3 font-mono font-bold text-emerald-400">{c.disposed2026.toLocaleString()}</td>
-                  <td className="px-4 py-3 font-mono text-cyan-300">{c.speedDays} Days</td>
-                  <td className="px-4 py-3 font-mono font-bold text-emerald-400">{c.clearanceRate}%</td>
+                <tr key={c.id} className="hover:bg-blue-500/5 transition-colors">
+                  <td className="px-4 py-3 font-bold text-blue-600 dark:text-blue-400">{c.court}</td>
+                  <td className="px-4 py-3 font-mono text-amber-700 dark:text-amber-300">{c.pending.toLocaleString()}</td>
+                  <td className="px-4 py-3 font-mono font-bold text-emerald-600 dark:text-emerald-400">{c.disposed2026.toLocaleString()}</td>
+                  <td className="px-4 py-3 font-mono text-cyan-700 dark:text-cyan-300">{c.speedDays} Days</td>
+                  <td className="px-4 py-3 font-mono font-bold text-emerald-600 dark:text-emerald-400">{c.clearanceRate}%</td>
                 </tr>
               ))}
             </tbody>

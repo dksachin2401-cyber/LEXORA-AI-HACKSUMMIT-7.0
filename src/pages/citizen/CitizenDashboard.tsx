@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { HelpCircle, Search, Globe, CheckSquare, Bot, AlertCircle, ArrowRight, ShieldCheck, FileSearch, Calculator, Sparkles, FileText } from 'lucide-react';
+import { HelpCircle, Search, Globe, CheckSquare, Bot, AlertCircle, ArrowRight, ShieldCheck, FileSearch, Calculator, Sparkles, FileText, Loader2 } from 'lucide-react';
+import { api } from '@/services/api';
 import { fastApi } from '@/services/fastapi';
 import { VoiceMicInput } from '@/components/citizen/VoiceMicInput';
 import { FreeLegalAidModal } from '@/components/citizen/FreeLegalAidModal';
@@ -9,7 +10,7 @@ import { CourtFeeCalculatorModal } from '@/components/citizen/CourtFeeCalculator
 const translations: Record<string, Record<string, string>> = {
   English: {
     portalTitle: "Citizen Legal Self-Help & Case Portal",
-    subTitle: "Litigant User: Ramesh Patel | Plain Language Legal Assistance",
+    subTitle: "e-Courts Citizen Access | Plain Language Legal Assistance",
     caseLookupTitle: "Look Up Your Case Status",
     casePlaceholder: "Enter Case Number (e.g. CIV.SUIT 104/2025 or WP(C) 412/2024)",
     searchBtn: "Search Case",
@@ -28,7 +29,7 @@ const translations: Record<string, Record<string, string>> = {
   },
   Hindi: {
     portalTitle: "नागरिक कानूनी सहायता एवं मामला पोर्टल",
-    subTitle: "याचिकाकर्ता: रमेश पटेल | सरल भाषा कानूनी सहायता",
+    subTitle: "ई-कोर्ट नागरिक एक्सेस | सरल भाषा कानूनी सहायता",
     caseLookupTitle: "अपने मामले की स्थिति देखें",
     casePlaceholder: "मामला संख्या दर्ज करें (जैसे CIV.SUIT 104/2025)",
     searchBtn: "खोजें",
@@ -47,7 +48,7 @@ const translations: Record<string, Record<string, string>> = {
   },
   Tamil: {
     portalTitle: "குடிமக்கள் சட்ட உதவி மற்றும் வழக்கு போர்ட்டல்",
-    subTitle: "வழக்குதாரர்: ரமேஷ் படேல் | எளிய மொழி சட்ட உதவி",
+    subTitle: "ஈ-கோர்ட்ஸ் குடிமக்கள் அணுகல் | எளிய மொழி சட்ட உதவி",
     caseLookupTitle: "உங்கள் வழக்கின் நிலையைக் கண்டறியவும்",
     casePlaceholder: "வழக்கு எண்ணை உள்ளிடவும் (எ.கா. CIV.SUIT 104/2025)",
     searchBtn: "தேடுங்கள்",
@@ -66,7 +67,7 @@ const translations: Record<string, Record<string, string>> = {
   },
   Telugu: {
     portalTitle: "పౌర న్యాయ సహాయం & కేసు పోర్టల్",
-    subTitle: "వాది: రమేష్ పటేల్ | సరళమైన భాషా న్యాయ సహాయం",
+    subTitle: "ఈ-కోర్ట్స్ పౌర ప్రాప్యత | సరళమైన భాషా న్యాయ సహాయం",
     caseLookupTitle: "మీ కేసు స్థితిని తనిఖీ చేయండి",
     casePlaceholder: "కేసు సంఖ్యను నమోదు చేయండి (ఉదా. CIV.SUIT 104/2025)",
     searchBtn: "శోధించండి",
@@ -85,7 +86,7 @@ const translations: Record<string, Record<string, string>> = {
   },
   Marathi: {
     portalTitle: "नागरिक कायदेशीर मदत आणि केस पोर्टल",
-    subTitle: "याचिकाकर्ते: रमेश पटेल | सोप्या भाषेतील कायदेशीर मदत",
+    subTitle: "ई-कोर्ट्स नागरिक प्रवेश | सोप्या भाषेतील कायदेशीर मदत",
     caseLookupTitle: "तुमच्या केसची स्थिती तपासा",
     casePlaceholder: "केस क्रमांक टाका (उदा. CIV.SUIT 104/2025)",
     searchBtn: "शोधा",
@@ -104,7 +105,7 @@ const translations: Record<string, Record<string, string>> = {
   },
   Bengali: {
     portalTitle: "নাগরিক আইনি সহায়তা ও কেস পোর্টাল",
-    subTitle: "মামলাকারী: রমেশ প্যাটেল | সহজ ভাষার আইনি সহায়তা",
+    subTitle: "ই-কোর্টস নাগরিক অ্যাক্সেস | সহজ ভাষার আইনি সহায়তা",
     caseLookupTitle: "আপনার মামলার বিবরণ খুঁজুন",
     casePlaceholder: "কেস নম্বর লিখুন (যেমন CIV.SUIT 104/2025)",
     searchBtn: "অনুসন্ধান",
@@ -123,7 +124,7 @@ const translations: Record<string, Record<string, string>> = {
   },
   Gujarati: {
     portalTitle: "નાગરિક કાનૂની સહાય અને કેસ પોર્ટલ",
-    subTitle: "અરજદાર: રમેશ પટેલ | સરળ ભાષામાં કાનૂની સહાય",
+    subTitle: "ઈ-કોર્ટ્સ નાગરિક ઍક્સેસ | સરળ ભાષામાં કાનૂની સહાય",
     caseLookupTitle: "તમારા કેસની સ્થિતિ તપાસો",
     casePlaceholder: "કેસ નંબર દાખલ કરો (જેમ કે CIV.SUIT 104/2025)",
     searchBtn: "શોધો",
@@ -142,9 +143,40 @@ const translations: Record<string, Record<string, string>> = {
   }
 };
 
+/** Format a date string from Prisma into a human-readable Indian date. */
+function formatDate(dateStr: string | null | undefined): string {
+  if (!dateStr) return 'Not available';
+  try {
+    return new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+  } catch {
+    return dateStr;
+  }
+}
+
+/** From a list of hearings, return the next upcoming hearing date string. */
+function resolveNextHearing(hearings: any[], nextHearingFallback: string | null): string {
+  if (hearings && hearings.length > 0) {
+    const now = new Date();
+    const upcoming = hearings
+      .map((h: any) => ({ ...h, _d: new Date(h.date) }))
+      .filter((h: any) => h._d >= now)
+      .sort((a: any, b: any) => a._d.getTime() - b._d.getTime());
+
+    if (upcoming.length > 0) {
+      return formatDate(upcoming[0].date);
+    }
+  }
+  if (nextHearingFallback) return formatDate(nextHearingFallback);
+  return 'No upcoming hearing scheduled.';
+}
+
 export const CitizenDashboard = () => {
   const [caseNoQuery, setCaseNoQuery] = useState('');
   const [searchedCase, setSearchedCase] = useState<any>(null);
+  const [caseSearchLoading, setCaseSearchLoading] = useState(false);
+  const [caseSearchError, setCaseSearchError] = useState<string | null>(null);
+  const [caseNotFound, setCaseNotFound] = useState(false);
+
   const [plainQuestion, setPlainQuestion] = useState('');
   const [plainAnswer, setPlainAnswer] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -157,31 +189,79 @@ export const CitizenDashboard = () => {
 
   const t = translations[selectedLang] || translations.English;
 
-  const handleLookupCase = (e: React.FormEvent) => {
+  // ─── LIVE CASE LOOKUP ────────────────────────────────────────────────────────
+  const handleLookupCase = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!caseNoQuery) return;
-    setSearchedCase({
-      caseNumber: caseNoQuery.toUpperCase(),
-      title: 'Ramesh Patel vs. Municipal Corporation',
-      court: 'District Civil Court',
-      status: 'Pending Next Hearing',
-      nextHearing: '22nd August 2026',
-      stage: 'Filing of Written Statements',
-      plainSummary: 'This case involves a civil land title dispute regarding a municipal road widening notice. The next step is for the municipal authorities to file their official response.'
-    });
+    const query = caseNoQuery.trim();
+    if (!query) return;
+
+    setCaseSearchLoading(true);
+    setCaseSearchError(null);
+    setCaseNotFound(false);
+    setSearchedCase(null);
+
+    try {
+      const results = await api.searchPublicCases(query);
+
+      if (!Array.isArray(results) || results.length === 0) {
+        setCaseNotFound(true);
+        return;
+      }
+
+      const c = results[0];
+      setSearchedCase({
+        caseNumber: c.caseNumber,
+        title: c.title,
+        court: c.court || c.division || '—',
+        status: c.status,
+        nextHearing: resolveNextHearing(c.hearings || [], c.nextHearing),
+        stage: c.priority || 'Active',
+        description: c.description || null,
+        judge: c.judge ? `${c.judge.name}${c.judge.designation ? `, ${c.judge.designation}` : ''}` : null,
+      });
+    } catch (err: any) {
+      // 404 from the API means case not found (structured 404 JSON)
+      if (err?.message?.includes('Case not found') || err?.message?.includes('404')) {
+        setCaseNotFound(true);
+      } else {
+        setCaseSearchError('LIVE API ERROR — Unable to retrieve case information.');
+      }
+    } finally {
+      setCaseSearchLoading(false);
+    }
   };
 
+  const handleClearSearch = () => {
+    setSearchedCase(null);
+    setCaseSearchError(null);
+    setCaseNotFound(false);
+    setCaseNoQuery('');
+  };
+
+  // ─── PLAIN LANGUAGE AI ASSISTANT ─────────────────────────────────────────────
+  // Uses GLOBAL PRECEDENT search (findSimilarCases) because the citizen portal
+  // is not scoped to a specific case — no case_id is available here.
   const handleAskPlainHelp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!plainQuestion.trim()) return;
     setLoading(true);
     try {
-      const res = await fastApi.askRAG(plainQuestion);
-      setPlainAnswer(res);
+      const res = await fastApi.findSimilarCases(plainQuestion, 4);
+      // Reformat similar-cases response into a plain-language answer shape
+      const topExcerpts = (res.matches || [])
+        .slice(0, 3)
+        .map((m: any) => m.excerpt || '')
+        .filter(Boolean);
+      setPlainAnswer({
+        answer: topExcerpts.length > 0
+          ? topExcerpts.join('\n\n')
+          : 'No relevant legal information found for your question.',
+        sources: (res.matches || []).slice(0, 3).map((m: any) => m.case_name || m.document_name || 'Legal Reference')
+      });
     } catch {
       setPlainAnswer({
-        answer: "📌 LEGAL RIGHTS OVERVIEW:\nUnder Indian Law and Constitution (Article 21), every citizen has the right to procedural due process and fair hearing.\n\n📋 STEP-BY-STEP PROCEDURAL GUIDE:\n1. Step 1: Obtain a copy of the legal notice / court petition.\n2. Step 2: Consult an Advocate or District Legal Services Authority (DLSA).\n3. Step 3: File a Written Statement / Reply within 30 days.\n\n🏛️ COURT SUMMONS INSTRUCTIONS:\nFailure to appear or file reply may result in an ex-parte court decision.",
-        sources: ["Code of Civil Procedure, 1908 (Order VIII Rule 1)"]
+        answer: "The AI Legal Assistant is currently unavailable. Please try again shortly or consult the District Legal Services Authority (DLSA) for free legal aid.",
+        sources: []
       });
     } finally {
       setLoading(false);
@@ -196,26 +276,26 @@ export const CitizenDashboard = () => {
   ];
 
   return (
-    <div className="space-y-6 text-white">
+    <div className="space-y-6 animate-fadeIn">
       {/* Header */}
-      <div className="border-b border-white/15 pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+      <div className="border-b border-subtle pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-white">
+          <h1 className="text-2xl sm:text-3xl font-serif font-bold theme-heading">
             {t.portalTitle}
           </h1>
-          <p className="text-slate-300 text-xs sm:text-sm mt-1">
+          <p className="theme-subtext text-xs sm:text-sm mt-1">
             {t.subTitle}
           </p>
         </div>
 
         {/* Multilingual Selector Pill */}
-        <div className="mt-3 sm:mt-0 flex items-center gap-2 bg-[#0F1B33] px-3.5 py-2 rounded-xl border border-white/20 text-xs text-white shadow-md">
-          <Globe className="w-4 h-4 text-[#C9A24B]" />
-          <span className="font-bold text-slate-200">{t.langLabel}:</span>
-          <select 
-            value={selectedLang} 
+        <div className="mt-3 sm:mt-0 flex items-center gap-2 theme-elevated px-3.5 py-2 rounded border border-subtle text-xs shadow-sm">
+          <Globe className="w-4 h-4 text-amber-500" />
+          <span className="font-bold theme-heading">{t.langLabel}:</span>
+          <select
+            value={selectedLang}
             onChange={(e) => setSelectedLang(e.target.value)}
-            className="bg-[#0A1428] font-bold text-[#C9A24B] outline-none border border-white/20 rounded px-2 py-1 cursor-pointer"
+            className="font-bold text-xs rounded px-2 py-1 cursor-pointer"
           >
             <option value="English">English</option>
             <option value="Hindi">हिंदी (Hindi)</option>
@@ -232,87 +312,137 @@ export const CitizenDashboard = () => {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <button
           onClick={() => setShowLegalAidModal(true)}
-          className="p-4 bg-[#132240] hover:bg-[#132240]/90 border border-white/15 hover:border-[#C9A24B] rounded-xl flex items-center gap-3 text-left transition-all group cursor-pointer shadow-lg"
+          className="p-4 theme-card hover:bg-slate-100 dark:hover:bg-slate-800 rounded flex items-center gap-3 text-left transition-all group cursor-pointer"
         >
-          <div className="p-3 bg-[#C9A24B]/15 text-[#C9A24B] rounded-xl group-hover:scale-110 transition-transform">
+          <div className="p-3 theme-elevated text-blue-500 rounded group-hover:scale-105 transition-transform">
             <ShieldCheck className="w-6 h-6" />
           </div>
           <div>
-            <h3 className="font-serif font-bold text-white text-xs">Free Legal Aid Application</h3>
-            <p className="text-[10px] text-slate-300">DLSA Section 12 Counsel Generator</p>
+            <h3 className="font-serif font-bold theme-heading text-xs">Free Legal Aid Application</h3>
+            <p className="text-[10px] theme-subtext">DLSA Section 12 Counsel Generator</p>
           </div>
         </button>
 
         <button
           onClick={() => setShowNoticeModal(true)}
-          className="p-4 bg-[#132240] hover:bg-[#132240]/90 border border-white/15 hover:border-[#C9A24B] rounded-xl flex items-center gap-3 text-left transition-all group cursor-pointer shadow-lg"
+          className="p-4 theme-card hover:bg-slate-100 dark:hover:bg-slate-800 rounded flex items-center gap-3 text-left transition-all group cursor-pointer"
         >
-          <div className="p-3 bg-[#C9A24B]/15 text-[#C9A24B] rounded-xl group-hover:scale-110 transition-transform">
+          <div className="p-3 theme-elevated text-blue-500 rounded group-hover:scale-105 transition-transform">
             <Sparkles className="w-6 h-6" />
           </div>
           <div>
-            <h3 className="font-serif font-bold text-white text-xs">Notice & Summons Decipherer</h3>
-            <p className="text-[10px] text-slate-300">Plain Language Risk & Action Steps</p>
+            <h3 className="font-serif font-bold theme-heading text-xs">Notice & Summons Decipherer</h3>
+            <p className="text-[10px] theme-subtext">Plain Language Risk & Action Steps</p>
           </div>
         </button>
 
         <button
           onClick={() => setShowCalculatorModal(true)}
-          className="p-4 bg-[#132240] hover:bg-[#132240]/90 border border-white/15 hover:border-[#C9A24B] rounded-xl flex items-center gap-3 text-left transition-all group cursor-pointer shadow-lg"
+          className="p-4 theme-card hover:bg-slate-100 dark:hover:bg-slate-800 rounded flex items-center gap-3 text-left transition-all group cursor-pointer"
         >
-          <div className="p-3 bg-[#C9A24B]/15 text-[#C9A24B] rounded-xl group-hover:scale-110 transition-transform">
+          <div className="p-3 theme-elevated text-blue-500 rounded group-hover:scale-105 transition-transform">
             <Calculator className="w-6 h-6" />
           </div>
           <div>
-            <h3 className="font-serif font-bold text-white text-xs">Court Fee & Stamp Duty Calculator</h3>
-            <p className="text-[10px] text-slate-300">Ad-Valorem Filing Charge Calculator</p>
+            <h3 className="font-serif font-bold theme-heading text-xs">Court Fee & Stamp Duty Calculator</h3>
+            <p className="text-[10px] theme-subtext">Ad-Valorem Filing Charge Calculator</p>
           </div>
         </button>
       </div>
 
       {/* Case Status Quick Lookup */}
-      <div className="bg-[#132240] border border-white/15 rounded-xl p-6 shadow-xl space-y-4">
-        <h2 className="text-base font-serif font-bold text-white">{t.caseLookupTitle}</h2>
+      <div className="theme-card rounded p-6 space-y-4">
+        <h2 className="text-base font-serif font-bold theme-heading">{t.caseLookupTitle}</h2>
         <form onSubmit={handleLookupCase} className="flex flex-col sm:flex-row gap-2.5">
           <input
             type="text"
             placeholder={t.casePlaceholder}
             value={caseNoQuery}
             onChange={(e) => setCaseNoQuery(e.target.value)}
-            className="flex-1 px-4 py-2.5 bg-white/10 border border-white/20 rounded-lg text-xs text-white placeholder-slate-400 outline-none focus:border-[#C9A24B]"
+            className="flex-1 px-4 py-2.5 text-xs rounded"
           />
-          <button type="submit" className="px-6 py-2.5 bg-[#C9A24B] text-[#1B2C4F] text-xs font-bold rounded-lg hover:bg-[#D9B35C] shadow-md cursor-pointer">
-            {t.searchBtn}
+          <button
+            type="submit"
+            disabled={caseSearchLoading || !caseNoQuery.trim()}
+            className="theme-primary-btn px-6 py-2.5 text-xs flex items-center gap-2"
+          >
+            {caseSearchLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+            {caseSearchLoading ? 'Searching...' : t.searchBtn}
           </button>
+          {(searchedCase || caseNotFound || caseSearchError) && (
+            <button
+              type="button"
+              onClick={handleClearSearch}
+              className="theme-secondary-btn px-4 py-2.5 text-xs"
+            >
+              Clear
+            </button>
+          )}
         </form>
 
-        {searchedCase && (
-          <div className="bg-white/5 border border-white/15 p-4 rounded-lg space-y-2 text-slate-200">
+        {/* Loading State */}
+        {caseSearchLoading && (
+          <div className="flex items-center gap-3 text-xs theme-subtext py-2">
+            <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+            Searching live e-Courts database...
+          </div>
+        )}
+
+        {/* Not Found State */}
+        {caseNotFound && !caseSearchLoading && (
+          <div className="flex items-start gap-3 p-4 theme-elevated rounded border border-subtle text-xs text-amber-600 dark:text-amber-400">
+            <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="font-bold">Case not found.</p>
+              <p className="theme-subtext mt-0.5">Please verify the case number or party name and try again. Ensure you use the exact format (e.g. CIV.SUIT 104/2025).</p>
+            </div>
+          </div>
+        )}
+
+        {/* Error State */}
+        {caseSearchError && !caseSearchLoading && (
+          <div className="flex items-start gap-3 p-4 theme-elevated rounded border border-subtle text-xs text-red-600 dark:text-red-400">
+            <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+            <p>{caseSearchError}</p>
+          </div>
+        )}
+
+        {/* Live Result */}
+        {searchedCase && !caseSearchLoading && (
+          <div className="theme-elevated p-4 rounded space-y-2 border border-subtle">
             <div className="flex justify-between items-center">
-              <span className="font-bold text-[#C9A24B] text-sm">{searchedCase.caseNumber}</span>
-              <span className="px-2.5 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold rounded">
+              <span className="font-bold text-blue-500 text-sm">{searchedCase.caseNumber}</span>
+              <span className="badge-pending px-2.5 py-1 text-xs font-bold rounded">
                 {searchedCase.status}
               </span>
             </div>
             <p className="text-xs"><strong>Title:</strong> {searchedCase.title}</p>
             <p className="text-xs"><strong>Court:</strong> {searchedCase.court}</p>
-            <p className="text-xs"><strong>Next Hearing:</strong> {searchedCase.nextHearing}</p>
-            <p className="text-xs bg-[#0F1B33] p-3 rounded-lg border border-white/15 mt-2 text-slate-300 leading-relaxed">
-              <strong className="text-[#C9A24B]">Plain Language Summary:</strong> {searchedCase.plainSummary}
+            {searchedCase.judge && (
+              <p className="text-xs"><strong>Presiding Officer:</strong> {searchedCase.judge}</p>
+            )}
+            <p className="text-xs">
+              <strong>Next Hearing:</strong>{' '}
+              <span className="text-amber-500 font-mono">{searchedCase.nextHearing}</span>
             </p>
+            {searchedCase.description && (
+              <p className="text-xs theme-card p-3 rounded border border-subtle mt-2 theme-subtext leading-relaxed">
+                <strong className="theme-heading">Case Description:</strong> {searchedCase.description}
+              </p>
+            )}
           </div>
         )}
       </div>
 
       {/* Plain Language AI Assistant with Voice Microphone Input */}
-      <div className="bg-[#132240] border border-white/15 rounded-xl p-6 shadow-xl space-y-4">
+      <div className="theme-card rounded p-6 space-y-4">
         <div className="flex justify-between items-start flex-wrap gap-2">
           <div>
-            <h2 className="text-base font-serif font-bold text-white flex items-center gap-2">
-              <Bot className="w-5 h-5 text-[#C9A24B]" />
+            <h2 className="text-base font-serif font-bold theme-heading flex items-center gap-2">
+              <Bot className="w-5 h-5 text-amber-500" />
               {t.askTitle}
             </h2>
-            <p className="text-xs text-slate-300 mt-1">{t.askSub}</p>
+            <p className="text-xs theme-subtext mt-1">{t.askSub}</p>
           </div>
 
           {/* Voice Microphone Button */}
@@ -325,23 +455,23 @@ export const CitizenDashboard = () => {
             placeholder={t.askPlaceholder}
             value={plainQuestion}
             onChange={(e) => setPlainQuestion(e.target.value)}
-            className="w-full p-3.5 bg-white/10 border border-white/20 rounded-xl text-xs text-white placeholder-slate-400 outline-none focus:border-[#C9A24B] leading-relaxed"
+            className="w-full p-3.5 text-xs rounded leading-relaxed"
           />
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             disabled={loading}
-            className="px-6 py-2.5 bg-[#C9A24B] text-[#1B2C4F] font-bold text-xs rounded-lg hover:bg-[#D9B35C] shadow-md flex items-center gap-1.5 cursor-pointer"
+            className="theme-primary-btn px-6 py-2.5 text-xs flex items-center gap-1.5 cursor-pointer"
           >
             {loading ? 'Asking AI Assistant...' : t.askBtn}
           </button>
         </form>
 
         {plainAnswer && (
-          <div className="p-4 bg-white/5 border border-white/15 rounded-lg text-xs text-slate-200 space-y-2 leading-relaxed">
+          <div className="p-4 theme-elevated rounded border border-subtle text-xs theme-subtext space-y-2 leading-relaxed">
             <p className="whitespace-pre-wrap font-sans">{plainAnswer.answer}</p>
-            {plainAnswer.sources && (
-              <div className="text-[10px] text-slate-400 pt-2 border-t border-white/10">
-                <strong className="text-[#C9A24B]">Legal Sources:</strong> {plainAnswer.sources.join(', ')}
+            {plainAnswer.sources && plainAnswer.sources.length > 0 && (
+              <div className="text-[10px] theme-subtext pt-2 border-t border-subtle">
+                <strong className="theme-heading">Legal Sources:</strong> {plainAnswer.sources.join(', ')}
               </div>
             )}
           </div>
@@ -349,18 +479,18 @@ export const CitizenDashboard = () => {
       </div>
 
       {/* Citizen Action Checklist */}
-      <div className="bg-[#132240] border border-white/15 rounded-xl p-6 shadow-xl space-y-4">
-        <h2 className="text-base font-serif font-bold text-white flex items-center gap-2">
-          <CheckSquare className="w-5 h-5 text-[#C9A24B]" />
+      <div className="theme-card rounded p-6 space-y-4">
+        <h2 className="text-base font-serif font-bold theme-heading flex items-center gap-2">
+          <CheckSquare className="w-5 h-5 text-amber-500" />
           {t.checklistTitle}
         </h2>
         <div className="space-y-2.5">
           {checklist.map((item, idx) => (
-            <div key={idx} className="flex items-center justify-between p-3.5 bg-white/5 rounded-lg border border-white/15 text-xs">
-              <span className={item.done ? 'line-through text-slate-400' : 'text-white font-semibold'}>
+            <div key={idx} className="flex items-center justify-between p-3.5 theme-elevated rounded border border-subtle text-xs">
+              <span className={item.done ? 'line-through theme-subtext' : 'theme-heading font-semibold'}>
                 {item.title}
               </span>
-              <span className={`px-2.5 py-1 rounded text-[10px] font-extrabold ${item.done ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'}`}>
+              <span className={`px-2.5 py-1 rounded text-[10px] font-extrabold ${item.done ? 'badge-supported' : 'badge-pending'}`}>
                 {item.done ? t.completed : t.pending}
               </span>
             </div>

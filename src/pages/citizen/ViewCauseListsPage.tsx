@@ -89,27 +89,27 @@ export const ViewCauseListsPage: React.FC = () => {
   const activeList = getList();
 
   return (
-    <div className="space-y-6 text-white">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="border-b border-white/15 pb-4">
-        <h1 className="text-2xl sm:text-3xl font-serif font-bold text-white flex items-center gap-2">
-          <Calendar className="w-6 h-6 text-[#C9A24B]" />
+      <div className="border-b border-subtle pb-4">
+        <h1 className="text-2xl sm:text-3xl font-serif font-bold theme-heading flex items-center gap-2">
+          <Calendar className="w-6 h-6 text-blue-600 dark:text-blue-400" />
           Daily Courtroom Cause List & Bench Schedule
         </h1>
-        <p className="text-slate-300 text-xs sm:text-sm mt-1">
+        <p className="theme-subtext text-xs sm:text-sm mt-1">
           Real-time Item Numbers, Presiding Judges, Scheduled Hearing Times, and Daily Court Listings
         </p>
       </div>
 
       {/* Filter Controls */}
-      <div className="bg-[#132240] border border-white/15 rounded-xl p-4 flex flex-col sm:flex-row justify-between items-center gap-4 shadow-lg">
+      <div className="theme-card rounded-xl p-4 flex flex-col sm:flex-row justify-between items-center gap-4 shadow-lg">
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Calendar className="w-4 h-4 text-[#C9A24B]" />
-          <span className="text-xs font-bold text-slate-300">Select Date:</span>
+          <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+          <span className="text-xs font-bold theme-subtext">Select Date:</span>
           <select
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
-            className="px-3.5 py-2 bg-[#0F1B33] border border-white/20 rounded-lg text-xs font-bold text-[#C9A24B] outline-none cursor-pointer"
+            className="px-3.5 py-2 theme-elevated border border-subtle rounded-lg text-xs font-bold theme-heading outline-none cursor-pointer"
           >
             <option value="2026-08-07">Today (07 August 2026)</option>
             <option value="2026-08-08">Tomorrow (08 August 2026)</option>
@@ -119,12 +119,12 @@ export const ViewCauseListsPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Building className="w-4 h-4 text-[#C9A24B]" />
-          <span className="text-xs font-bold text-slate-300">Select Courtroom Bench:</span>
+          <Building className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+          <span className="text-xs font-bold theme-subtext">Select Courtroom Bench:</span>
           <select
             value={selectedCourtKey}
             onChange={(e) => setSelectedCourtKey(e.target.value)}
-            className="px-3.5 py-2 bg-[#0F1B33] border border-white/20 rounded-lg text-xs font-bold text-[#C9A24B] outline-none cursor-pointer"
+            className="px-3.5 py-2 theme-elevated border border-subtle rounded-lg text-xs font-bold theme-heading outline-none cursor-pointer"
           >
             <option value="c1">Courtroom #1 (Justice Rajesh Sharma - Commercial Debt & SARFAESI)</option>
             <option value="c2">Courtroom #2 (Justice Meenakshi Sundaram - Criminal Appeals & Bail)</option>
@@ -135,29 +135,29 @@ export const ViewCauseListsPage: React.FC = () => {
       </div>
 
       {/* Bench Header Card */}
-      <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-xs text-emerald-200 flex justify-between items-center flex-wrap gap-2">
+      <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-xs text-emerald-800 dark:text-emerald-200 flex justify-between items-center flex-wrap gap-2">
         <div className="flex items-center gap-2">
-          <Scale className="w-4 h-4 text-emerald-400" />
+          <Scale className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           <span>Active Listing for: <strong>{courtNames[selectedCourtKey]}</strong></span>
         </div>
-        <span className="font-mono text-emerald-400 font-bold bg-white/10 px-2.5 py-1 rounded">
+        <span className="font-mono text-emerald-700 dark:text-emerald-400 font-bold badge-supported px-2.5 py-1 rounded">
           {activeList.length} Matters Scheduled on {selectedDate}
         </span>
       </div>
 
       {/* Cause List Table */}
-      <div className="bg-[#132240] border border-white/15 rounded-xl overflow-hidden shadow-xl">
-        <div className="p-4 border-b border-white/15 bg-[#0F1B33] flex justify-between items-center">
-          <h2 className="text-base font-serif font-bold text-white flex items-center gap-2">
-            <Building className="w-5 h-5 text-[#C9A24B]" />
+      <div className="theme-card rounded-xl overflow-hidden shadow-xl border border-subtle">
+        <div className="p-4 border-b border-subtle theme-elevated flex justify-between items-center">
+          <h2 className="text-base font-serif font-bold theme-heading flex items-center gap-2">
+            <Building className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             Official Daily Cause List Schedule
           </h2>
-          <span className="text-xs text-emerald-400 font-mono font-bold">Verified Court Registry Listing</span>
+          <span className="text-xs text-emerald-600 dark:text-emerald-400 font-mono font-bold">Verified Court Registry Listing</span>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left border-collapse">
-            <thead className="bg-[#0A1428] text-slate-300 font-serif uppercase tracking-wider border-b border-white/15">
+            <thead className="theme-elevated theme-subtext font-serif uppercase tracking-wider border-b border-subtle">
               <tr>
                 <th className="px-4 py-3">Item #</th>
                 <th className="px-4 py-3">Case Reference & CNR</th>
@@ -168,19 +168,19 @@ export const ViewCauseListsPage: React.FC = () => {
                 <th className="px-4 py-3">Scheduled Time</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/10">
+            <tbody className="divide-y divide-subtle">
               {activeList.map((item) => (
-                <tr key={item.itemNo} className="hover:bg-white/5 transition-colors">
-                  <td className="px-4 py-3 font-bold font-mono text-emerald-400">#{item.itemNo}</td>
+                <tr key={item.itemNo} className="hover:bg-blue-500/5 transition-colors">
+                  <td className="px-4 py-3 font-bold font-mono text-emerald-600 dark:text-emerald-400">#{item.itemNo}</td>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <span className="font-mono font-bold text-[#C9A24B] block">{item.caseNo}</span>
-                    <span className="text-[10px] text-slate-400 font-mono">{item.cnr}</span>
+                    <span className="font-mono font-bold text-blue-600 dark:text-blue-400 block">{item.caseNo}</span>
+                    <span className="text-[10px] theme-subtext font-mono">{item.cnr}</span>
                   </td>
-                  <td className="px-4 py-3 font-semibold text-white">{item.parties}</td>
-                  <td className="px-4 py-3 text-slate-300">{item.stage}</td>
-                  <td className="px-4 py-3 text-cyan-300 font-mono text-[11px]">{item.statute}</td>
-                  <td className="px-4 py-3 text-slate-400">{item.advocate}</td>
-                  <td className="px-4 py-3 font-mono font-bold text-amber-300 whitespace-nowrap">{item.time}</td>
+                  <td className="px-4 py-3 font-semibold theme-heading">{item.parties}</td>
+                  <td className="px-4 py-3 theme-subtext">{item.stage}</td>
+                  <td className="px-4 py-3 text-cyan-700 dark:text-cyan-300 font-mono text-[11px]">{item.statute}</td>
+                  <td className="px-4 py-3 theme-subtext">{item.advocate}</td>
+                  <td className="px-4 py-3 font-mono font-bold text-amber-700 dark:text-amber-300 whitespace-nowrap">{item.time}</td>
                 </tr>
               ))}
             </tbody>

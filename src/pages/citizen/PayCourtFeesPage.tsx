@@ -104,24 +104,24 @@ export const PayCourtFeesPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 text-white">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="border-b border-white/15 pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+      <div className="border-b border-subtle pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-white flex items-center gap-2">
-            <CreditCard className="w-6 h-6 text-[#C9A24B]" />
+          <h1 className="text-2xl sm:text-3xl font-serif font-bold theme-heading flex items-center gap-2">
+            <CreditCard className="w-6 h-6 text-blue-600 dark:text-blue-400" />
             e-Pay Court Fees & Digital Treasury Gateway
           </h1>
-          <p className="text-slate-300 text-xs sm:text-sm mt-1">
+          <p className="theme-subtext text-xs sm:text-sm mt-1">
             Pay Ad-Valorem Filing Fees, e-Stamps, Process Fees, and Obtain Instant GRN Treasury Receipts
           </p>
         </div>
 
         <button
           onClick={() => setShowHistory(!showHistory)}
-          className="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 cursor-pointer"
+          className="theme-secondary-btn px-4 py-2 font-bold text-xs rounded-xl flex items-center gap-1.5 cursor-pointer"
         >
-          <History className="w-4 h-4 text-[#C9A24B]" />
+          <History className="w-4 h-4 text-blue-600 dark:text-blue-400" />
           <span>{showHistory ? 'Back to Payment Form' : 'View Payment History'}</span>
         </button>
       </div>
@@ -129,44 +129,44 @@ export const PayCourtFeesPage: React.FC = () => {
       {!showHistory ? (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Payment Form (7 Cols) */}
-          <div className="lg:col-span-7 bg-[#132240] border border-white/15 rounded-xl p-6 shadow-xl space-y-4">
+          <div className="lg:col-span-7 theme-card rounded-xl p-6 shadow-xl space-y-4">
             {!paymentDone ? (
               <form onSubmit={handlePay} className="space-y-4 text-xs">
-                <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-200 flex items-center gap-2">
-                  <Lock className="w-4 h-4 text-amber-400 shrink-0" />
+                <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-800 dark:text-amber-200 flex items-center gap-2">
+                  <Lock className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
                   <span>Secured by e-Courts Portal & State Bank of India e-Treasury Gateway (GRN Integration).</span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block font-semibold text-slate-300 mb-1">Case Number / Reference:</label>
+                    <label className="block font-semibold theme-heading mb-1">Case Number / Reference:</label>
                     <input
                       type="text"
                       required
                       value={caseNo}
                       onChange={(e) => setCaseNo(e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-white/10 border border-white/20 rounded-xl text-white font-mono font-bold"
+                      className="w-full px-3.5 py-2.5 theme-elevated border border-subtle rounded-xl theme-heading font-mono font-bold"
                     />
                   </div>
 
                   <div>
-                    <label className="block font-semibold text-slate-300 mb-1">CNR Number:</label>
+                    <label className="block font-semibold theme-heading mb-1">CNR Number:</label>
                     <input
                       type="text"
                       required
                       value={cnrNo}
                       onChange={(e) => setCnrNo(e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-white/10 border border-white/20 rounded-xl text-white font-mono font-bold"
+                      className="w-full px-3.5 py-2.5 theme-elevated border border-subtle rounded-xl theme-heading font-mono font-bold"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-slate-300 mb-1">Fee Classification:</label>
+                  <label className="block font-semibold theme-heading mb-1">Fee Classification:</label>
                   <select
                     value={feeType}
                     onChange={(e) => setFeeType(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-[#0F1B33] border border-white/20 rounded-xl text-white font-bold cursor-pointer"
+                    className="w-full px-3.5 py-2.5 theme-elevated border border-subtle rounded-xl theme-heading font-bold cursor-pointer"
                   >
                     <option value="Ad-Valorem Filing Fee">Ad-Valorem Filing Fee</option>
                     <option value="Advocate Welfare Stamp Duty">Advocate Welfare Stamp Duty</option>
@@ -176,27 +176,27 @@ export const PayCourtFeesPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-slate-300 mb-1">Suit Claim Valuation (₹):</label>
+                  <label className="block font-semibold theme-heading mb-1">Suit Claim Valuation (₹):</label>
                   <input
                     type="number"
                     required
                     value={suitClaimValue}
                     onChange={(e) => setSuitClaimValue(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-white/10 border border-white/20 rounded-xl text-white font-mono font-bold"
+                    className="w-full px-3.5 py-2.5 theme-elevated border border-subtle rounded-xl theme-heading font-mono font-bold"
                   />
                 </div>
 
                 {/* Payment Method Selector */}
-                <div className="space-y-2 border-t border-white/15 pt-3">
-                  <label className="block font-semibold text-[#C9A24B] mb-1">Select Digital Payment Gateway:</label>
+                <div className="space-y-2 border-t border-subtle pt-3">
+                  <label className="block font-semibold text-blue-600 dark:text-blue-400 mb-1">Select Digital Payment Gateway:</label>
                   <div className="grid grid-cols-2 gap-3">
                     <button
                       type="button"
                       onClick={() => setPaymentMethod('UPI')}
                       className={`p-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 cursor-pointer ${
                         paymentMethod === 'UPI'
-                          ? 'bg-[#C9A24B] text-[#1B2C4F] border-[#C9A24B]'
-                          : 'bg-white/5 border-white/20 text-white'
+                          ? 'theme-primary-btn border-blue-600'
+                          : 'theme-elevated border-subtle theme-heading'
                       }`}
                     >
                       <Smartphone className="w-4 h-4" />
@@ -208,8 +208,8 @@ export const PayCourtFeesPage: React.FC = () => {
                       onClick={() => setPaymentMethod('NETBANKING')}
                       className={`p-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 cursor-pointer ${
                         paymentMethod === 'NETBANKING'
-                          ? 'bg-[#C9A24B] text-[#1B2C4F] border-[#C9A24B]'
-                          : 'bg-white/5 border-white/20 text-white'
+                          ? 'theme-primary-btn border-blue-600'
+                          : 'theme-elevated border-subtle theme-heading'
                       }`}
                     >
                       <Landmark className="w-4 h-4" />
@@ -220,23 +220,23 @@ export const PayCourtFeesPage: React.FC = () => {
 
                 {paymentMethod === 'UPI' ? (
                   <div>
-                    <label className="block font-semibold text-slate-300 mb-1">Enter Virtual Payment Address (VPA / UPI ID):</label>
+                    <label className="block font-semibold theme-heading mb-1">Enter Virtual Payment Address (VPA / UPI ID):</label>
                     <input
                       type="text"
                       required
                       value={upiId}
                       onChange={(e) => setUpiId(e.target.value)}
                       placeholder="username@upi"
-                      className="w-full px-3.5 py-2.5 bg-white/10 border border-white/20 rounded-xl text-white font-mono"
+                      className="w-full px-3.5 py-2.5 theme-elevated border border-subtle rounded-xl theme-heading font-mono"
                     />
                   </div>
                 ) : (
                   <div>
-                    <label className="block font-semibold text-slate-300 mb-1">Select Bank Treasury Gateway:</label>
+                    <label className="block font-semibold theme-heading mb-1">Select Bank Treasury Gateway:</label>
                     <select
                       value={bankName}
                       onChange={(e) => setBankName(e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-[#0F1B33] border border-white/20 rounded-xl text-white font-bold cursor-pointer"
+                      className="w-full px-3.5 py-2.5 theme-elevated border border-subtle rounded-xl theme-heading font-bold cursor-pointer"
                     >
                       <option value="State Bank of India">State Bank of India (e-Treasury)</option>
                       <option value="HDFC Bank">HDFC Bank Court Gateway</option>
@@ -249,50 +249,50 @@ export const PayCourtFeesPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3.5 bg-[#C9A24B] hover:bg-[#D9B35C] text-[#1B2C4F] font-extrabold text-xs rounded-xl shadow-lg flex items-center justify-center gap-2 cursor-pointer mt-4"
+                  className="w-full py-3.5 theme-primary-btn font-extrabold text-xs rounded-xl shadow-lg flex items-center justify-center gap-2 cursor-pointer mt-4"
                 >
-                  <CreditCard className="w-4 h-4 text-[#1B2C4F]" />
+                  <CreditCard className="w-4 h-4" />
                   <span>{loading ? 'Connecting State Treasury Gateway...' : `Authorize & Pay ₹${fees.totalPayable.toLocaleString()} Online Now`}</span>
                 </button>
               </form>
             ) : (
               <div className="space-y-4">
-                <div className="p-4 bg-emerald-500/20 border border-emerald-500/40 rounded-xl text-emerald-200 space-y-1">
-                  <div className="flex items-center gap-2 font-bold text-sm text-emerald-300">
-                    <CheckCircle className="w-5 h-5 text-emerald-400" />
+                <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-800 dark:text-emerald-200 space-y-1">
+                  <div className="flex items-center gap-2 font-bold text-sm text-emerald-700 dark:text-emerald-300">
+                    <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                     e-Payment Successful! Treasury GRN Generated.
                   </div>
-                  <p className="text-xs text-slate-200">Government Reference Number (GRN): <span className="font-mono font-bold text-emerald-300">{paymentDone.grn}</span></p>
+                  <p className="text-xs theme-subtext">Government Reference Number (GRN): <span className="font-mono font-bold text-emerald-600 dark:text-emerald-300">{paymentDone.grn}</span></p>
                 </div>
 
-                <div className="p-4 bg-[#0F1B33] border border-white/20 rounded-xl space-y-2 text-xs font-mono">
-                  <div className="flex justify-between border-b border-white/10 pb-1">
-                    <span>Receipt Reference:</span>
-                    <span className="font-bold text-[#C9A24B]">{paymentDone.receiptNo}</span>
+                <div className="p-4 theme-elevated border border-subtle rounded-xl space-y-2 text-xs font-mono">
+                  <div className="flex justify-between border-b border-subtle pb-1">
+                    <span className="theme-subtext">Receipt Reference:</span>
+                    <span className="font-bold text-blue-600 dark:text-blue-400">{paymentDone.receiptNo}</span>
                   </div>
-                  <div className="flex justify-between border-b border-white/10 pb-1">
-                    <span>Transaction ID:</span>
-                    <span className="text-white">{paymentDone.txnId}</span>
+                  <div className="flex justify-between border-b border-subtle pb-1">
+                    <span className="theme-subtext">Transaction ID:</span>
+                    <span className="theme-heading">{paymentDone.txnId}</span>
                   </div>
-                  <div className="flex justify-between border-b border-white/10 pb-1">
-                    <span>Case Reference:</span>
-                    <span className="font-bold text-white">{paymentDone.caseNo}</span>
+                  <div className="flex justify-between border-b border-subtle pb-1">
+                    <span className="theme-subtext">Case Reference:</span>
+                    <span className="font-bold theme-heading">{paymentDone.caseNo}</span>
                   </div>
-                  <div className="flex justify-between border-b border-white/10 pb-1">
-                    <span>Fee Classification:</span>
-                    <span className="text-slate-300">{paymentDone.feeType}</span>
+                  <div className="flex justify-between border-b border-subtle pb-1">
+                    <span className="theme-subtext">Fee Classification:</span>
+                    <span className="theme-subtext">{paymentDone.feeType}</span>
                   </div>
-                  <div className="flex justify-between border-b border-white/10 pb-1">
-                    <span>Payment Method:</span>
-                    <span className="text-slate-300">{paymentDone.paymentMethod}</span>
+                  <div className="flex justify-between border-b border-subtle pb-1">
+                    <span className="theme-subtext">Payment Method:</span>
+                    <span className="theme-subtext">{paymentDone.paymentMethod}</span>
                   </div>
-                  <div className="flex justify-between border-b border-white/10 pb-1">
-                    <span>Total Amount Paid:</span>
-                    <span className="font-bold text-emerald-400">₹{paymentDone.amount.toLocaleString()}</span>
+                  <div className="flex justify-between border-b border-subtle pb-1">
+                    <span className="theme-subtext">Total Amount Paid:</span>
+                    <span className="font-bold text-emerald-600 dark:text-emerald-400">₹{paymentDone.amount.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Treasury Status:</span>
-                    <span className="text-emerald-400 font-bold">{paymentDone.status}</span>
+                    <span className="theme-subtext">Treasury Status:</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">{paymentDone.status}</span>
                   </div>
                 </div>
 
@@ -320,7 +320,7 @@ Verified for High Court / District Registry Filing.`;
                       a.download = `eCourt_Fee_Receipt_${paymentDone.grn.replace(/\//g, '_')}.txt`;
                       a.click();
                     }}
-                    className="flex-1 py-3 bg-[#C9A24B] hover:bg-[#D9B35C] text-[#1B2C4F] font-bold rounded-xl shadow flex items-center justify-center gap-2 cursor-pointer text-xs"
+                    className="flex-1 py-3 theme-primary-btn font-bold rounded-xl shadow flex items-center justify-center gap-2 cursor-pointer text-xs"
                   >
                     <Download className="w-4 h-4" />
                     <span>Download e-Challan Treasury Receipt</span>
@@ -328,7 +328,7 @@ Verified for High Court / District Registry Filing.`;
 
                   <button
                     onClick={() => setPaymentDone(null)}
-                    className="px-4 py-3 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-xl font-semibold text-xs cursor-pointer"
+                    className="px-4 py-3 theme-secondary-btn rounded-xl font-semibold text-xs cursor-pointer"
                   >
                     Pay Another Fee
                   </button>
@@ -338,41 +338,41 @@ Verified for High Court / District Registry Filing.`;
           </div>
 
           {/* Statutory Fee Calculation Summary (5 Cols) */}
-          <div className="lg:col-span-5 bg-[#132240] border border-white/15 rounded-xl p-5 space-y-4 shadow-xl text-xs">
-            <h2 className="text-sm font-serif font-bold text-[#C9A24B] border-b border-white/15 pb-2 flex items-center gap-2">
+          <div className="lg:col-span-5 theme-card border border-subtle rounded-xl p-5 space-y-4 shadow-xl text-xs">
+            <h2 className="text-sm font-serif font-bold text-blue-600 dark:text-blue-400 border-b border-subtle pb-2 flex items-center gap-2">
               <Calculator className="w-4 h-4" />
               Statutory Court Fee Calculation Breakdown
             </h2>
 
-            <div className="space-y-2 bg-[#0F1B33] p-4 rounded-xl border border-white/10 font-mono">
-              <div className="flex justify-between border-b border-white/10 pb-1">
-                <span>Suit Claim Amount:</span>
-                <span className="font-bold text-white">₹{parseFloat(suitClaimValue || '0').toLocaleString()}</span>
+            <div className="space-y-2 theme-elevated p-4 rounded-xl border border-subtle font-mono">
+              <div className="flex justify-between border-b border-subtle pb-1">
+                <span className="theme-subtext">Suit Claim Amount:</span>
+                <span className="font-bold theme-heading">₹{parseFloat(suitClaimValue || '0').toLocaleString()}</span>
               </div>
-              <div className="flex justify-between border-b border-white/10 pb-1">
-                <span>Ad-Valorem Fee (Statutory):</span>
-                <span className="text-slate-300">₹{fees.adValoremFee.toLocaleString()}</span>
+              <div className="flex justify-between border-b border-subtle pb-1">
+                <span className="theme-subtext">Ad-Valorem Fee (Statutory):</span>
+                <span className="theme-subtext">₹{fees.adValoremFee.toLocaleString()}</span>
               </div>
-              <div className="flex justify-between border-b border-white/10 pb-1">
-                <span>Advocate Welfare Stamp:</span>
-                <span className="text-slate-300">₹{fees.welfareStamp}</span>
+              <div className="flex justify-between border-b border-subtle pb-1">
+                <span className="theme-subtext">Advocate Welfare Stamp:</span>
+                <span className="theme-subtext">₹{fees.welfareStamp}</span>
               </div>
-              <div className="flex justify-between border-b border-white/10 pb-1">
-                <span>Summons Process Fee:</span>
-                <span className="text-slate-300">₹{fees.processFee}</span>
+              <div className="flex justify-between border-b border-subtle pb-1">
+                <span className="theme-subtext">Summons Process Fee:</span>
+                <span className="theme-subtext">₹{fees.processFee}</span>
               </div>
               <div className="flex justify-between pt-1 text-sm font-bold">
-                <span className="text-[#C9A24B]">Total Payable Amount:</span>
-                <span className="text-emerald-400">₹{fees.totalPayable.toLocaleString()}</span>
+                <span className="text-blue-600 dark:text-blue-400">Total Payable Amount:</span>
+                <span className="text-emerald-600 dark:text-emerald-400">₹{fees.totalPayable.toLocaleString()}</span>
               </div>
             </div>
 
-            <div className="p-3.5 bg-white/5 border border-white/10 rounded-xl space-y-1">
-              <div className="font-bold text-white text-xs flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            <div className="p-3.5 theme-elevated border border-subtle rounded-xl space-y-1">
+              <div className="font-bold theme-heading text-xs flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 Legal Validity & Compliance
               </div>
-              <p className="text-[11px] text-slate-300 leading-relaxed">
+              <p className="text-[11px] theme-subtext leading-relaxed">
                 e-Payment GRN receipts generated through this portal are legally recognized under Section 65B of the Indian Evidence Act and Supreme Court e-Filing Rules.
               </p>
             </div>
@@ -380,18 +380,18 @@ Verified for High Court / District Registry Filing.`;
         </div>
       ) : (
         /* Payment History Table */
-        <div className="bg-[#132240] border border-white/15 rounded-xl overflow-hidden shadow-xl">
-          <div className="p-4 border-b border-white/15 bg-[#0F1B33] flex justify-between items-center">
-            <h2 className="text-base font-serif font-bold text-white flex items-center gap-2">
-              <History className="w-5 h-5 text-[#C9A24B]" />
+        <div className="theme-card border border-subtle rounded-xl overflow-hidden shadow-xl">
+          <div className="p-4 border-b border-subtle theme-elevated flex justify-between items-center">
+            <h2 className="text-base font-serif font-bold theme-heading flex items-center gap-2">
+              <History className="w-5 h-5 text-blue-600 dark:text-blue-400" />
               Court Fee Payment History & Generated GRN Receipts ({paymentHistory.length})
             </h2>
-            <span className="text-xs text-emerald-400 font-mono font-bold">State Treasury Verified</span>
+            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-mono font-bold">State Treasury Verified</span>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left border-collapse">
-              <thead className="bg-[#0A1428] text-slate-300 font-serif uppercase tracking-wider border-b border-white/15">
+              <thead className="theme-elevated theme-subtext font-serif uppercase tracking-wider border-b border-subtle">
                 <tr>
                   <th className="px-4 py-3">GRN Reference</th>
                   <th className="px-4 py-3">Case Number</th>
@@ -401,15 +401,15 @@ Verified for High Court / District Registry Filing.`;
                   <th className="px-4 py-3">Timestamp</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/10">
+              <tbody className="divide-y divide-subtle">
                 {paymentHistory.map((rec, idx) => (
-                  <tr key={idx} className="hover:bg-white/5 transition-colors">
-                    <td className="px-4 py-3 font-mono font-bold text-[#C9A24B]">{rec.grn}</td>
-                    <td className="px-4 py-3 font-mono text-white">{rec.caseNo}</td>
-                    <td className="px-4 py-3 text-slate-300">{rec.feeType}</td>
-                    <td className="px-4 py-3 font-mono font-bold text-emerald-400">₹{rec.amount.toLocaleString()}</td>
-                    <td className="px-4 py-3 text-slate-400">{rec.paymentMethod}</td>
-                    <td className="px-4 py-3 font-mono text-slate-400">{rec.date}</td>
+                  <tr key={idx} className="hover:bg-blue-500/5 transition-colors">
+                    <td className="px-4 py-3 font-mono font-bold text-blue-600 dark:text-blue-400">{rec.grn}</td>
+                    <td className="px-4 py-3 font-mono theme-heading">{rec.caseNo}</td>
+                    <td className="px-4 py-3 theme-subtext">{rec.feeType}</td>
+                    <td className="px-4 py-3 font-mono font-bold text-emerald-600 dark:text-emerald-400">₹{rec.amount.toLocaleString()}</td>
+                    <td className="px-4 py-3 theme-subtext">{rec.paymentMethod}</td>
+                    <td className="px-4 py-3 font-mono theme-subtext">{rec.date}</td>
                   </tr>
                 ))}
               </tbody>

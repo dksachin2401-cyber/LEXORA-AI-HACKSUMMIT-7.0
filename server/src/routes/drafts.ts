@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { authenticateToken, AuthRequest } from '../middleware/auth';
+import { authenticateToken, requireRole, AuthRequest } from '../middleware/auth.js';
+import { encryptField, decryptField } from '../utils/fieldEncryption.js';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -12,7 +13,11 @@ router.get('/', authenticateToken, async (req: AuthRequest, res) => {
       include: { case: true, signedBy: true },
       orderBy: { createdAt: 'desc' }
     });
-    res.json({ success: true, drafts });
+    const decryptedDrafts = drafts.map(d => ({
+      ...d,
+      content: decryptField(d.content) || ''
+    }));
+    res.json({ success: true, drafts: decryptedDrafts });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch drafts' });
   }
@@ -22,12 +27,29 @@ router.get('/', authenticateToken, async (req: AuthRequest, res) => {
 router.post('/', authenticateToken, async (req: AuthRequest, res) => {
   try {
     const { caseId, docType, title, content } = req.body;
+
+    let targetCaseId = caseId;
+    if (caseId) {
+      const existing = await prisma.case.findFirst({
+        where: { OR: [{ id: String(caseId) }, { caseNumber: String(caseId) }] }
+      });
+      if (existing) targetCaseId = existing.id;
+    }
+    if (!targetCaseId) {
+      const firstCase = await prisma.case.findFirst();
+      if (firstCase) targetCaseId = firstCase.id;
+    }
+
+    if (!targetCaseId) {
+      return res.status(400).json({ error: 'No associated case found to link draft order.' });
+    }
+
     const draft = await prisma.draftOrder.create({
       data: {
-        caseId,
+        caseId: targetCaseId,
         docType: docType || 'Order',
-        title,
-        content,
+        title: title || 'Draft Court Order',
+        content: encryptField(content) || '',
         status: 'DRAFT'
       }
     });
@@ -46,16 +68,21 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
       });
     }
 
-    res.json({ success: true, draft });
+    const decryptedDraft = {
+      ...draft,
+      content: decryptField(draft.content) || ''
+    };
+
+    res.json({ success: true, draft: decryptedDraft });
   } catch (error) {
     res.status(500).json({ error: 'Failed to create draft order' });
   }
 });
 
-// Human Sign-Off (Approve / Reject)
-router.post('/:id/sign-off', authenticateToken, async (req: AuthRequest, res) => {
+// Human Sign-Off (Approve / Reject) - Restricted to Judicial Officers, Staff & Admins
+router.post('/:id/sign-off', authenticateToken, requireRole(['JUDGE', 'COURT_STAFF', 'STAFF', 'ADMIN']), async (req: AuthRequest, res) => {
   try {
-    const { id } = req.params;
+    const draftId = String(req.params.id);
     const { status, editedContent } = req.body; // APPROVED or REJECTED
 
     if (!['APPROVED', 'REJECTED'].includes(status)) {
@@ -63,10 +90,10 @@ router.post('/:id/sign-off', authenticateToken, async (req: AuthRequest, res) =>
     }
 
     const draft = await prisma.draftOrder.update({
-      where: { id },
+      where: { id: draftId },
       data: {
         status,
-        content: editedContent || undefined,
+        content: editedContent ? (encryptField(editedContent) || undefined) : undefined,
         signedById: req.user?.id,
         signedAt: new Date()
       }
@@ -79,14 +106,19 @@ router.post('/:id/sign-off', authenticateToken, async (req: AuthRequest, res) =>
           actorId: req.user.id,
           actorRole: req.user.role,
           action: status === 'APPROVED' ? 'HUMAN_SIGN_OFF_APPROVED' : 'HUMAN_SIGN_OFF_REJECTED',
-          input: `Draft ID: ${id}`,
+          input: `Draft ID: ${draftId}`,
           output: `Judicial Officer ${req.user.name} marked draft as ${status}`,
           outcome: status
         }
       });
     }
 
-    res.json({ success: true, draft, badge: "Human Authenticated Sign-Off Completed" });
+    const decryptedDraft = {
+      ...draft,
+      content: decryptField(draft.content) || ''
+    };
+
+    res.json({ success: true, draft: decryptedDraft, badge: "Human Authenticated Sign-Off Completed" });
   } catch (error) {
     res.status(500).json({ error: 'Failed to sign off draft' });
   }

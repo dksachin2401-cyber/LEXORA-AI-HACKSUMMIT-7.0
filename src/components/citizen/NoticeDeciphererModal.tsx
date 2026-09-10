@@ -40,14 +40,14 @@ export const NoticeDeciphererModal: React.FC<NoticeDeciphererModalProps> = ({ is
 
   return (
     <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-[#132240] border border-white/20 rounded-2xl w-full max-w-2xl text-white shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="theme-card border border-subtle rounded-xl w-full max-w-2xl theme-heading shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="p-4 border-b border-white/15 bg-[#0F1B33] flex justify-between items-center">
-          <h2 className="text-base font-serif font-bold text-white flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-[#C9A24B]" />
+        <div className="p-4 theme-header border-b border-subtle flex justify-between items-center">
+          <h2 className="text-base font-serif font-bold theme-heading flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-[var(--primary-accent)]" />
             Plain-Language Court Summons & Notice Decipherer
           </h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-white/10 text-slate-400 hover:text-white">
+          <button onClick={onClose} className="p-1 rounded hover:bg-slate-500/10 theme-subtext hover:theme-heading">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -55,7 +55,7 @@ export const NoticeDeciphererModal: React.FC<NoticeDeciphererModalProps> = ({ is
         {/* Content */}
         <div className="p-6 overflow-y-auto space-y-4 text-xs">
           <form onSubmit={handleDecipher} className="space-y-3">
-            <label className="block text-xs font-semibold text-slate-300">
+            <label className="block text-xs font-semibold theme-subtext">
               Paste Legal Notice / Summons Text or Police Notice:
             </label>
             <textarea
@@ -63,12 +63,12 @@ export const NoticeDeciphererModal: React.FC<NoticeDeciphererModalProps> = ({ is
               value={noticeText}
               onChange={(e) => setNoticeText(e.target.value)}
               placeholder="Paste notice text, e.g.: WHEREAS the Petitioner has filed a suit against you, IT IS HEREBY ORDERED that Notice be issued to Respondent returnable within 3 weeks..."
-              className="w-full p-3 bg-white/10 border border-white/20 rounded-xl text-xs text-white placeholder-slate-400 outline-none focus:border-[#C9A24B]"
+              className="w-full p-3 bg-slate-50 dark:bg-[#151E27] border border-subtle rounded-md text-xs theme-heading placeholder:theme-subtext outline-none focus:border-[var(--primary-accent)]"
             />
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 bg-[#C9A24B] hover:bg-[#D9B35C] text-[#1B2C4F] font-bold rounded-xl shadow-lg flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-2.5 theme-primary-btn font-semibold rounded-md shadow-xs flex items-center justify-center gap-2 cursor-pointer"
             >
               <FileSearch className="w-4 h-4" />
               <span>{loading ? 'Deciphering Legal Notice...' : 'Decipher Legal Notice into Plain Language'}</span>
@@ -76,40 +76,40 @@ export const NoticeDeciphererModal: React.FC<NoticeDeciphererModalProps> = ({ is
           </form>
 
           {deciphered && (
-            <div className="space-y-4 pt-2 border-t border-white/15">
-              <div className="p-3 bg-amber-500/20 border border-amber-500/40 rounded-xl flex justify-between items-center text-amber-200">
+            <div className="space-y-4 pt-2 border-t border-subtle">
+              <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-md flex justify-between items-center text-amber-900 dark:text-amber-200">
                 <span className="font-bold flex items-center gap-1.5">
-                  <Clock className="w-4 h-4 text-amber-400" />
+                  <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                   {deciphered.urgency}
                 </span>
-                <span className="px-2.5 py-0.5 bg-rose-500 text-white font-extrabold rounded text-[10px]">
+                <span className="px-2.5 py-0.5 bg-rose-600 text-white font-extrabold rounded text-[10px]">
                   DEADLINE: {deciphered.deadline}
                 </span>
               </div>
 
-              <div className="p-4 bg-white/5 border border-white/15 rounded-xl space-y-2 leading-relaxed">
-                <h3 className="font-serif font-bold text-[#C9A24B] text-sm">💡 Plain Language Meaning:</h3>
-                <p className="text-slate-200">{deciphered.plainMeaning}</p>
+              <div className="p-4 theme-elevated border border-subtle rounded-md space-y-2 leading-relaxed">
+                <h3 className="font-serif font-bold text-[var(--primary-accent)] text-sm">💡 Plain Language Meaning:</h3>
+                <p className="theme-subtext">{deciphered.plainMeaning}</p>
               </div>
 
-              <div className="p-4 bg-rose-500/10 border border-rose-500/30 rounded-xl space-y-2">
-                <h3 className="font-serif font-bold text-rose-300 text-xs flex items-center gap-1.5">
-                  <AlertTriangle className="w-4 h-4 text-rose-400" />
+              <div className="p-4 bg-rose-500/10 border border-rose-500/30 rounded-md space-y-2">
+                <h3 className="font-serif font-bold text-rose-800 dark:text-rose-300 text-xs flex items-center gap-1.5">
+                  <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400" />
                   Consequences if Ignored:
                 </h3>
-                <ul className="list-disc list-inside space-y-1 text-slate-300">
+                <ul className="list-disc list-inside space-y-1 theme-subtext">
                   {deciphered.consequences.map((c: string, i: number) => (
                     <li key={i}>{c}</li>
                   ))}
                 </ul>
               </div>
 
-              <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl space-y-2">
-                <h3 className="font-serif font-bold text-emerald-300 text-xs flex items-center gap-1.5">
-                  <CheckSquare className="w-4 h-4 text-emerald-400" />
+              <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-md space-y-2">
+                <h3 className="font-serif font-bold text-emerald-800 dark:text-emerald-300 text-xs flex items-center gap-1.5">
+                  <CheckSquare className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   Recommended Action Steps:
                 </h3>
-                <ul className="space-y-1 text-slate-200">
+                <ul className="space-y-1 theme-subtext">
                   {deciphered.actionSteps.map((s: string, i: number) => (
                     <li key={i} className="font-semibold">{s}</li>
                   ))}

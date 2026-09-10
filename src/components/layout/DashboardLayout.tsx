@@ -9,7 +9,7 @@ export function DashboardLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#0A1428] text-white">
+    <div className="min-h-screen theme-page-bg">
       <Sidebar
         collapsed={collapsed}
         onToggleCollapse={() => setCollapsed(!collapsed)}
@@ -18,7 +18,7 @@ export function DashboardLayout() {
       />
       <div
         className={cn(
-          'min-h-screen flex flex-col transition-all duration-300 bg-gradient-to-br from-[#0F1B33] via-[#1B2C4F] to-[#0A1428]',
+          'min-h-screen flex flex-col transition-all duration-200 theme-page-bg',
           collapsed ? 'lg:pl-16' : 'lg:pl-64'
         )}
       >

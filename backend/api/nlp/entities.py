@@ -30,7 +30,7 @@ def extract_legal_entities(text: str) -> Dict[str, Any]:
 
     # 1. Regex Layer for Case Number
     case_num_match = re.search(
-        r'(?:Writ\s+Petition|WP|Special\s+Leave\s+Petition|SLP|Criminal\s+Appeal|Civil\s+Appeal|Crl\.A\.|CA|Suit\s+No\.)\s*(?:\([A-Za-z0-9\s-]+\))?\s*(?:No\.|\/)?\s*\d+[\/\-]\d{2,4}',
+        r'(?:Writ\s+Petition|WP|Special\s+Leave\s+Petition|SLP|Criminal\s+Appeal|Civil\s+Appeal|Crl\.?\s*A\.|CA|Suit\s+No\.|Case\s+No\.|CASE\s+NO\.)\s*(?:\([A-Za-z0-9\s-]+\))?\s*(?:No\.|\/)?\s*[A-Za-z0-9\s\/\-]*\d{2,4}',
         text, re.IGNORECASE
     )
     if case_num_match:

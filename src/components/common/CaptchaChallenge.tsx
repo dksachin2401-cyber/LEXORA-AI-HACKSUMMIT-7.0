@@ -35,16 +35,16 @@ export const CaptchaChallenge: React.FC<CaptchaChallengeProps> = ({ onVerify }) 
   };
 
   return (
-    <div className="p-3.5 bg-[#132240] border border-white/20 rounded-xl space-y-2 text-white">
+    <div className="p-3.5 theme-card border border-subtle rounded-md space-y-2">
       <div className="flex justify-between items-center text-xs">
-        <span className="font-bold text-[#C9A24B] flex items-center gap-1.5">
-          <ShieldCheck className="w-4 h-4 text-[#C9A24B]" />
+        <span className="font-bold theme-heading flex items-center gap-1.5">
+          <ShieldCheck className="w-4 h-4 text-[var(--primary-accent)]" />
           Security CAPTCHA Verification:
         </span>
         <button
           type="button"
           onClick={generateCaptcha}
-          className="text-slate-400 hover:text-white flex items-center gap-1 text-[11px] cursor-pointer"
+          className="theme-subtext hover:theme-heading flex items-center gap-1 text-[11px] cursor-pointer"
         >
           <RefreshCw className="w-3 h-3" />
           <span>Refresh</span>
@@ -52,7 +52,7 @@ export const CaptchaChallenge: React.FC<CaptchaChallengeProps> = ({ onVerify }) 
       </div>
 
       <div className="flex items-center gap-3">
-        <div className="px-4 py-2 bg-[#0F1B33] border border-white/20 rounded-lg text-sm font-extrabold font-mono text-[#C9A24B] tracking-widest select-none shadow-inner">
+        <div className="px-4 py-2 bg-slate-100 dark:bg-[#151E27] border border-subtle rounded-md text-sm font-extrabold font-mono theme-heading tracking-widest select-none shadow-inner">
           {num1} + {num2} = ?
         </div>
         <input
@@ -60,12 +60,12 @@ export const CaptchaChallenge: React.FC<CaptchaChallengeProps> = ({ onVerify }) 
           value={userInput}
           onChange={handleChange}
           placeholder="Answer"
-          className="flex-1 px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-xs text-white placeholder-slate-400 outline-none focus:border-[#C9A24B]"
+          className="flex-1 px-3 py-2 bg-white dark:bg-[#151E27] border border-subtle rounded-md text-xs theme-heading outline-none focus:border-[var(--primary-accent)]"
         />
       </div>
 
       {userInput && (
-        <p className={`text-[11px] font-semibold ${isCorrect ? 'text-emerald-400' : 'text-rose-400'}`}>
+        <p className={`text-[11px] font-semibold ${isCorrect ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
           {isCorrect ? '✓ Security CAPTCHA Verified' : '✕ Incorrect math answer'}
         </p>
       )}

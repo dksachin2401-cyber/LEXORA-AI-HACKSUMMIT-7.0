@@ -100,15 +100,15 @@ export const EvidenceOrganizer = () => {
   });
 
   return (
-    <div className="space-y-6 text-white">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="border-b border-white/15 pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="border-b border-subtle pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-white flex items-center gap-2">
-            <FolderKanban className="w-6 h-6 text-[#C9A24B]" />
+          <h1 className="text-2xl sm:text-3xl font-serif font-bold theme-heading flex items-center gap-2">
+            <FolderKanban className="w-6 h-6 text-blue-600 dark:text-blue-400" />
             Judicial Evidence & Bench Notes Vault
           </h1>
-          <p className="text-slate-300 text-xs sm:text-sm mt-1">
+          <p className="theme-subtext text-xs sm:text-sm mt-1">
             Create, categorize, and persistently store judicial observations, witness testimony notes, and evidence exhibits.
           </p>
         </div>
@@ -116,40 +116,40 @@ export const EvidenceOrganizer = () => {
         {/* ➕ Plus Button to Add Notes */}
         <button
           onClick={() => setShowAddModal(true)}
-          className="px-5 py-3 bg-[#C9A24B] hover:bg-[#D9B35C] text-[#1B2C4F] font-extrabold text-xs rounded-xl shadow-lg flex items-center gap-2 cursor-pointer transition-transform hover:scale-105"
+          className="theme-primary-btn px-5 py-3 font-extrabold text-xs rounded-xl shadow-lg flex items-center gap-2 cursor-pointer transition-transform hover:scale-105"
         >
-          <Plus className="w-5 h-5 text-[#1B2C4F]" />
+          <Plus className="w-5 h-5" />
           <span>Add Bench Note / Evidence Note</span>
         </button>
       </div>
 
       {/* Success Notification */}
       {successMsg && (
-        <div className="p-3.5 bg-emerald-500/20 border border-emerald-500/40 text-emerald-200 text-xs rounded-xl flex items-center gap-2">
-          <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+        <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-800 dark:text-emerald-200 text-xs rounded-xl flex items-center gap-2">
+          <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
           <span>{successMsg}</span>
         </div>
       )}
 
       {/* Controls & Search Bar */}
-      <div className="bg-[#132240] border border-white/15 rounded-xl p-4 flex flex-col sm:flex-row justify-between items-center gap-3 shadow-lg">
+      <div className="theme-card border border-subtle rounded-xl p-4 flex flex-col sm:flex-row justify-between items-center gap-3 shadow-lg">
         <div className="flex-1 w-full sm:w-auto relative">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+          <Search className="w-4 h-4 theme-subtext absolute left-3 top-2.5" />
           <input
             type="text"
             placeholder="Search saved bench notes by title, case number, or evidence content..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-white/10 border border-white/20 rounded-lg text-xs text-white placeholder-slate-400 outline-none focus:border-[#C9A24B]"
+            className="w-full pl-9 pr-4 py-2 theme-elevated border border-subtle rounded-lg text-xs theme-heading placeholder:theme-subtext outline-none focus:ring-2 focus:ring-blue-500/20"
           />
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <span className="text-xs font-bold text-slate-300">Category Filter:</span>
+          <span className="text-xs font-bold theme-subtext">Category Filter:</span>
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="px-3 py-2 bg-[#0F1B33] border border-white/20 rounded-lg text-xs font-bold text-[#C9A24B] outline-none cursor-pointer"
+            className="px-3 py-2 theme-elevated border border-subtle rounded-lg text-xs font-bold theme-heading outline-none cursor-pointer"
           >
             <option value="ALL">All Categories</option>
             <option value="Testimony Bench Note">Testimony Bench Note</option>
@@ -161,55 +161,55 @@ export const EvidenceOrganizer = () => {
       </div>
 
       {/* Viewable Evidence & Bench Notes Inventory */}
-      <div className="bg-[#132240] border border-white/15 rounded-xl p-6 space-y-4 shadow-xl">
-        <div className="flex justify-between items-center border-b border-white/15 pb-3">
-          <h2 className="text-base font-serif font-bold text-white flex items-center gap-2">
-            <FileText className="w-5 h-5 text-[#C9A24B]" />
+      <div className="theme-card border border-subtle rounded-xl p-6 space-y-4 shadow-xl">
+        <div className="flex justify-between items-center border-b border-subtle pb-3">
+          <h2 className="text-base font-serif font-bold theme-heading flex items-center gap-2">
+            <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             Saved Judicial Evidence Notes ({filteredNotes.length})
           </h2>
-          <span className="text-xs text-emerald-400 font-mono font-bold">Encrypted & Saved to Bench Chamber Storage</span>
+          <span className="text-xs text-emerald-600 dark:text-emerald-400 font-mono font-bold">Encrypted & Saved to Bench Chamber Storage</span>
         </div>
 
         {filteredNotes.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredNotes.map((n) => (
-              <div key={n.id} className="bg-white/5 border border-white/15 rounded-xl p-4 flex flex-col justify-between space-y-3 hover:border-[#C9A24B] transition-colors shadow">
+              <div key={n.id} className="theme-elevated border border-subtle rounded-xl p-4 flex flex-col justify-between space-y-3 hover:border-blue-500 transition-colors shadow">
                 <div>
                   <div className="flex justify-between items-start mb-1">
-                    <span className="font-mono font-bold text-[#C9A24B] text-xs">{n.caseNumber}</span>
-                    <span className="px-2 py-0.5 bg-white/10 text-[#C9A24B] text-[10px] font-bold rounded">
+                    <span className="font-mono font-bold text-blue-600 dark:text-blue-400 text-xs">{n.caseNumber}</span>
+                    <span className="px-2 py-0.5 theme-card text-blue-600 dark:text-blue-400 text-[10px] font-bold rounded">
                       {n.category}
                     </span>
                   </div>
 
-                  <h3 className="font-serif font-bold text-white text-sm mb-1">{n.title}</h3>
-                  <p className="text-xs text-slate-300 leading-relaxed line-clamp-3 bg-[#0F1B33] p-2.5 rounded-lg border border-white/10">
+                  <h3 className="font-serif font-bold theme-heading text-sm mb-1">{n.title}</h3>
+                  <p className="text-xs theme-subtext leading-relaxed line-clamp-3 theme-card p-2.5 rounded-lg border border-subtle">
                     "{n.note}"
                   </p>
                 </div>
 
-                <div className="space-y-2 pt-2 border-t border-white/10">
+                <div className="space-y-2 pt-2 border-t border-subtle">
                   <div className="flex flex-wrap gap-1">
                     {n.tags.map((t, i) => (
-                      <span key={i} className="px-2 py-0.5 bg-amber-500/20 text-amber-300 text-[10px] font-bold rounded">
+                      <span key={i} className="px-2 py-0.5 badge-pending text-[10px] font-bold rounded">
                         #{t}
                       </span>
                     ))}
                   </div>
 
-                  <div className="flex justify-between items-center pt-1 text-[10px] text-slate-400">
+                  <div className="flex justify-between items-center pt-1 text-[10px] theme-subtext">
                     <span>{n.date}</span>
                     <div className="flex gap-2">
                       <button
                         onClick={() => setSelectedNote(n)}
-                        className="p-1 bg-white/10 hover:bg-white/20 text-[#C9A24B] rounded cursor-pointer"
+                        className="p-1 theme-secondary-btn rounded cursor-pointer"
                         title="View Note Details"
                       >
                         <Eye className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => handleDeleteNote(n.id)}
-                        className="p-1 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 rounded cursor-pointer"
+                        className="p-1 badge-rejected rounded cursor-pointer"
                         title="Delete Note"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -221,11 +221,11 @@ export const EvidenceOrganizer = () => {
             ))}
           </div>
         ) : (
-          <div className="p-8 text-center text-xs text-slate-400 space-y-2">
+          <div className="p-8 text-center text-xs theme-subtext space-y-2">
             <p>No evidence or bench notes match your search query.</p>
             <button
               onClick={() => setShowAddModal(true)}
-              className="px-4 py-2 bg-[#C9A24B] text-[#1B2C4F] font-bold rounded-lg text-xs"
+              className="theme-primary-btn px-4 py-2 text-xs font-bold rounded-lg"
             >
               Add First Note Now
             </button>
@@ -236,13 +236,13 @@ export const EvidenceOrganizer = () => {
       {/* ➕ Modal: Add New Judicial Note / Evidence */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#132240] border border-white/20 rounded-2xl w-full max-w-lg text-white shadow-2xl overflow-hidden p-6 space-y-4">
-            <div className="flex justify-between items-center border-b border-white/15 pb-3">
-              <h2 className="font-serif font-bold text-[#C9A24B] text-base flex items-center gap-2">
-                <Plus className="w-5 h-5 text-[#C9A24B]" />
+          <div className="theme-card border border-subtle rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden p-6 space-y-4">
+            <div className="flex justify-between items-center border-b border-subtle pb-3">
+              <h2 className="font-serif font-bold text-blue-600 dark:text-blue-400 text-base flex items-center gap-2">
+                <Plus className="w-5 h-5" />
                 Add New Judicial Bench Note / Evidence
               </h2>
-              <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-white">
+              <button onClick={() => setShowAddModal(false)} className="theme-subtext hover:theme-heading">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -250,22 +250,22 @@ export const EvidenceOrganizer = () => {
             <form onSubmit={handleSaveNote} className="space-y-3 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold text-slate-300 mb-1">Case Reference Number:</label>
+                  <label className="block font-semibold theme-heading mb-1">Case Reference Number:</label>
                   <input
                     type="text"
                     required
                     value={caseNumber}
                     onChange={(e) => setCaseNumber(e.target.value)}
-                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white font-bold"
+                    className="w-full px-3 py-2 theme-elevated border border-subtle rounded-lg theme-heading font-bold"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-slate-300 mb-1">Note Category:</label>
+                  <label className="block font-semibold theme-heading mb-1">Note Category:</label>
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                    className="w-full px-3 py-2 bg-[#0F1B33] border border-white/20 rounded-lg text-white font-bold"
+                    className="w-full px-3 py-2 theme-elevated border border-subtle rounded-lg theme-heading font-bold"
                   >
                     <option value="Testimony Bench Note">Testimony Bench Note</option>
                     <option value="Forensic Exhibit Note">Forensic Exhibit Note</option>
@@ -276,52 +276,52 @@ export const EvidenceOrganizer = () => {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-300 mb-1">Note / Evidence Title:</label>
+                <label className="block font-semibold theme-heading mb-1">Note / Evidence Title:</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. PW-2 Cross Examination Observations"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white font-bold"
+                  className="w-full px-3 py-2 theme-elevated border border-subtle rounded-lg theme-heading font-bold"
                 />
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-300 mb-1">Detailed Judicial Observations / Notes:</label>
+                <label className="block font-semibold theme-heading mb-1">Detailed Judicial Observations / Notes:</label>
                 <textarea
                   rows={4}
                   required
                   placeholder="Type bench observations, witness testimonies, or forensic exhibit notes here..."
                   value={noteContent}
                   onChange={(e) => setNoteContent(e.target.value)}
-                  className="w-full p-3 bg-white/10 border border-white/20 rounded-lg text-white outline-none leading-relaxed"
+                  className="w-full p-3 theme-elevated border border-subtle rounded-lg theme-heading outline-none leading-relaxed"
                 />
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-300 mb-1">Tags (Comma Separated):</label>
+                <label className="block font-semibold theme-heading mb-1">Tags (Comma Separated):</label>
                 <input
                   type="text"
                   placeholder="PW-2, Exhibit B, Mortgaged Asset"
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
-                  className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white"
+                  className="w-full px-3 py-2 theme-elevated border border-subtle rounded-lg theme-heading"
                 />
               </div>
 
               <div className="flex gap-3 pt-2">
                 <button
                   type="submit"
-                  className="flex-1 py-3 bg-[#C9A24B] hover:bg-[#D9B35C] text-[#1B2C4F] font-bold rounded-xl shadow flex items-center justify-center gap-2 cursor-pointer"
+                  className="flex-1 py-3 theme-primary-btn font-bold rounded-xl shadow flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <Plus className="w-4 h-4 text-[#1B2C4F]" />
+                  <Plus className="w-4 h-4" />
                   <span>Save Note to Evidence Vault</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-4 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold"
+                  className="px-4 py-3 theme-secondary-btn rounded-xl font-bold"
                 >
                   Cancel
                 </button>
@@ -334,33 +334,33 @@ export const EvidenceOrganizer = () => {
       {/* View Selected Note Modal */}
       {selectedNote && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#132240] border border-white/20 rounded-2xl w-full max-w-lg text-white shadow-2xl overflow-hidden p-6 space-y-4">
-            <div className="flex justify-between items-center border-b border-white/15 pb-3">
-              <h2 className="font-serif font-bold text-[#C9A24B] text-base flex items-center gap-2">
+          <div className="theme-card border border-subtle rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden p-6 space-y-4">
+            <div className="flex justify-between items-center border-b border-subtle pb-3">
+              <h2 className="font-serif font-bold text-blue-600 dark:text-blue-400 text-base flex items-center gap-2">
                 <Eye className="w-5 h-5" />
                 Judicial Bench Note Details
               </h2>
-              <button onClick={() => setSelectedNote(null)} className="text-slate-400 hover:text-white">
+              <button onClick={() => setSelectedNote(null)} className="theme-subtext hover:theme-heading">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="space-y-3 text-xs">
-              <div className="flex justify-between items-center border-b border-white/10 pb-2">
-                <span className="font-mono font-bold text-[#C9A24B] text-sm">{selectedNote.caseNumber}</span>
-                <span className="px-2.5 py-1 bg-white/10 text-white text-[10px] font-bold rounded">
+              <div className="flex justify-between items-center border-b border-subtle pb-2">
+                <span className="font-mono font-bold text-blue-600 dark:text-blue-400 text-sm">{selectedNote.caseNumber}</span>
+                <span className="px-2.5 py-1 theme-elevated text-xs font-bold rounded theme-heading">
                   {selectedNote.category}
                 </span>
               </div>
 
-              <h3 className="font-serif font-bold text-white text-base">{selectedNote.title}</h3>
+              <h3 className="font-serif font-bold theme-heading text-base">{selectedNote.title}</h3>
 
-              <div className="p-4 bg-[#0F1B33] border border-white/10 rounded-xl space-y-1">
-                <span className="text-[10px] text-slate-400 uppercase font-bold block">Observations & Notes:</span>
-                <p className="text-slate-100 leading-relaxed font-serif whitespace-pre-wrap">{selectedNote.note}</p>
+              <div className="p-4 theme-elevated border border-subtle rounded-xl space-y-1">
+                <span className="text-[10px] theme-subtext uppercase font-bold block">Observations & Notes:</span>
+                <p className="theme-heading leading-relaxed font-serif whitespace-pre-wrap">{selectedNote.note}</p>
               </div>
 
-              <div className="flex justify-between items-center text-[10px] text-slate-400 pt-1">
+              <div className="flex justify-between items-center text-[10px] theme-subtext pt-1">
                 <span>Logged by: <strong>{selectedNote.author}</strong></span>
                 <span>Date: <strong>{selectedNote.date}</strong></span>
               </div>
@@ -368,7 +368,7 @@ export const EvidenceOrganizer = () => {
 
             <button
               onClick={() => setSelectedNote(null)}
-              className="w-full py-2.5 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl text-xs"
+              className="w-full py-2.5 theme-secondary-btn font-bold rounded-xl text-xs"
             >
               Close Inspection
             </button>

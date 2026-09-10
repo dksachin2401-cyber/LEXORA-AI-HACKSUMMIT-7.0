@@ -1,5 +1,45 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Merriweather:ital,wght@0,300;0,400;0,700;1,300&family=Cinzel:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 @import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  /* Centralized Semantic Theme Tokens - Light Mode */
+  --bg-page: #F6F7F9;
+  --bg-surface: #FFFFFF;
+  --bg-elevated: #EEF1F4;
+  --text-main: #18212B;
+  --text-sub: #4A5568;
+  --text-muted: #718096;
+  --border-subtle: #D9DEE4;
+  --border-strong: #B8C0CB;
+  --primary-accent: #1E40AF;
+  --primary-accent-hover: #1E3A8A;
+  --secondary-accent: #B08A4A;
+  --color-success: #347A5A;
+  --color-warning: #9A6B24;
+  --color-error: #B44A4A;
+  --btn-text: #FFFFFF;
+}
+
+html.dark {
+  /* Centralized Semantic Theme Tokens - Dark Mode */
+  --bg-page: #0F151C;
+  --bg-surface: #151E27;
+  --bg-elevated: #1B2631;
+  --text-main: #FFFFFF;
+  --text-sub: #CBD5E1;
+  --text-muted: #94A3B8;
+  --border-subtle: #2B3742;
+  --border-strong: #3F4F5E;
+  --primary-accent: #60A5FA;
+  --primary-accent-hover: #93C5FD;
+  --secondary-accent: #FBBF24;
+  --color-success: #34D399;
+  --color-warning: #FBBF24;
+  --color-error: #F87171;
+  --btn-text: #FFFFFF;
+}
 
 @layer base {
   * {
@@ -9,265 +49,173 @@
   }
 
   html, body {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: var(--bg-page) !important;
+    color: var(--text-main) !important;
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     min-height: 100vh;
-    transition: background-color 0.25s ease, color 0.25s ease;
   }
 
-  h1, h2, h3, h4, h5, h6, .font-serif {
-    font-family: 'Merriweather', Georgia, serif;
-    line-height: 1.3;
+  h1, h2, h3, h4, h5, h6, .font-serif, .editorial-heading {
+    font-family: 'Merriweather', 'Cinzel', Georgia, serif;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    color: var(--text-main);
+  }
+
+  .font-mono {
+    font-family: 'IBM Plex Mono', monospace;
   }
 }
 
-/* Explicit Select & Option Styling for Dropdowns */
-select, option, optgroup {
-  background-color: #0F1B33 !important;
-  color: #FFFFFF !important;
+/* Explicit Form Controls */
+select, option, optgroup, input, textarea {
+  background-color: var(--bg-surface) !important;
+  color: var(--text-main) !important;
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: 0.25rem !important;
 }
 
-html.light select, html.light option, html.light optgroup {
-  background-color: #FFFFFF !important;
-  color: #0F172A !important;
+input:focus, select:focus, textarea:focus {
+  outline: none !important;
+  border-color: var(--primary-accent) !important;
+  box-shadow: 0 0 0 1px var(--primary-accent) !important;
 }
 
-/* ===== LIGHT MODE OVERRIDES (SOFT WARM SLATE - LOW INTENSITY, NO BLINDING WHITE) ===== */
-html.light body,
-html.light main,
-html.light .institutional-bg,
-html.light .theme-page-bg {
-  background: #EEF2F6 !important;
-  color: #0F172A !important;
+input::placeholder, textarea::placeholder {
+  color: var(--text-muted) !important;
 }
 
-html.light header,
-html.light .theme-header {
-  background: #FFFFFF !important;
-  border-bottom: 1px solid #CBD5E1 !important;
-  color: #0F172A !important;
+/* Dynamic Page & Container Scoping */
+body, main, .institutional-bg, .theme-page-bg {
+  background-color: var(--bg-page) !important;
+  color: var(--text-main) !important;
 }
 
-html.light aside,
-html.light .theme-sidebar {
-  background: #F8FAFC !important;
-  border-right: 1px solid #CBD5E1 !important;
-  color: #0F172A !important;
+header, .theme-header {
+  background-color: var(--bg-surface) !important;
+  border-bottom: 1px solid var(--border-subtle) !important;
+  color: var(--text-main) !important;
 }
 
-/* Cards in Light Mode */
-html.light .bg-\[\#132240\],
-html.light .bg-\[\#0F1B33\],
-html.light .bg-\[\#0A1428\],
-html.light .institutional-card,
-html.light .theme-card,
-html.light .glass-card {
-  background-color: #FFFFFF !important;
-  border: 1px solid #CBD5E1 !important;
-  color: #0F172A !important;
-  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06) !important;
+aside, .theme-sidebar {
+  background-color: var(--bg-surface) !important;
+  border-right: 1px solid var(--border-subtle) !important;
+  color: var(--text-main) !important;
 }
 
-/* Sub-boxes in Light Mode */
-html.light .bg-white\/5,
-html.light .bg-white\/10,
-html.light .bg-white\/20,
-html.light .bg-\[\#0F1B33\] {
-  background-color: #F1F5F9 !important;
-  border-color: #CBD5E1 !important;
-  color: #0F172A !important;
+/* Surfaces and Cards */
+.institutional-card,
+.theme-card,
+.glass-card {
+  background-color: var(--bg-surface) !important;
+  border: 1px solid var(--border-subtle) !important;
+  color: var(--text-main) !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  border-radius: 0.25rem !important;
 }
 
-/* Text in Light Mode automatically switches to Black / Dark Navy */
-html.light h1,
-html.light h2,
-html.light h3,
-html.light h4,
-html.light h5,
-html.light h6,
-html.light .text-white,
-html.light .theme-heading {
-  color: #0F1B33 !important;
+/* Elevated Sub-boxes */
+.theme-elevated,
+.bg-slate-800,
+.bg-slate-900 {
+  background-color: var(--bg-elevated) !important;
+  border: 1px solid var(--border-subtle) !important;
+  color: var(--text-main) !important;
 }
 
-html.light p,
-html.light span,
-html.light label,
-html.light .text-slate-200,
-html.light .text-slate-300,
-html.light .theme-subtext {
-  color: #1E293B !important;
+/* Typography Helpers */
+.theme-heading {
+  color: var(--text-main) !important;
 }
 
-html.light .text-slate-400 {
-  color: #475569 !important;
+.theme-subtext {
+  color: var(--text-sub) !important;
 }
 
-/* Gold Accent Headers in Light Mode */
-html.light .text-\[\#C9A24B\] {
-  color: #B38728 !important;
-}
-
-/* Tables in Light Mode */
-html.light table {
-  background-color: #FFFFFF !important;
-  color: #0F172A !important;
-}
-
-html.light thead,
-html.light th {
-  background-color: #E2E8F0 !important;
-  color: #0F172A !important;
-  border-bottom: 2px solid #CBD5E1 !important;
-}
-
-html.light tbody tr {
-  background-color: #FFFFFF !important;
-  color: #0F172A !important;
-  border-bottom: 1px solid #E2E8F0 !important;
-}
-
-html.light tbody tr:hover {
-  background-color: #F8FAFC !important;
-}
-
-html.light td {
-  color: #0F172A !important;
-}
-
-/* Form Controls in Light Mode */
-html.light input,
-html.light select,
-html.light textarea {
-  background-color: #FFFFFF !important;
-  border: 1px solid #94A3B8 !important;
-  color: #0F172A !important;
-}
-
-html.light input::placeholder,
-html.light textarea::placeholder {
-  color: #64748B !important;
-}
-
-/* Sidebar Nav Items in Light Mode */
-html.light .sidebar-nav-active {
-  background-color: #E2E8F0 !important;
-  color: #0F1B33 !important;
-  border-left: 4px solid #B38728 !important;
-}
-
-html.light .sidebar-nav-item {
-  color: #334155 !important;
-}
-
-html.light .sidebar-nav-item:hover {
-  background-color: #F1F5F9 !important;
-  color: #0F1B33 !important;
-}
-
-
-/* ===== DARK MODE OVERRIDES (DEEP NAVY LUXURY DARK MODE) ===== */
-html.dark body,
-html.dark main,
-html.dark .institutional-bg,
-html.dark .theme-page-bg,
-body, html {
-  background: linear-gradient(135deg, #0F1B33 0%, #1B2C4F 50%, #0A1428 100%) !important;
-  color: #FFFFFF !important;
-}
-
-html.dark header,
-html.dark .theme-header {
-  background: rgba(15, 27, 51, 0.95) !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
-  color: #FFFFFF !important;
-}
-
-html.dark aside,
-html.dark .theme-sidebar {
-  background: #0F1B33 !important;
-  border-right: 1px solid rgba(255, 255, 255, 0.15) !important;
-  color: #FFFFFF !important;
-}
-
-html.dark .institutional-card,
-html.dark .theme-card,
-html.dark .glass-card {
-  background: #132240 !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
-  color: #FFFFFF !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
-}
-
-html.dark .theme-heading,
-html.dark h1,
-html.dark h2,
-html.dark h3,
-html.dark h4,
-html.dark h5,
-html.dark h6 {
-  color: #FFFFFF !important;
-}
-
-html.dark .theme-subtext,
-html.dark .text-slate-300 {
-  color: #CBD5E1 !important;
-}
-
-html.dark table {
-  background-color: #132240 !important;
-  color: #FFFFFF !important;
-}
-
-html.dark thead,
-html.dark th {
-  background-color: #0A1428 !important;
-  color: #CBD5E1 !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
-}
-
-html.dark tbody tr {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
-  background-color: #132240 !important;
-  color: #FFFFFF !important;
-}
-
-html.dark td {
-  color: #E2E8F0 !important;
-}
-
-html.dark input,
-html.dark select,
-html.dark textarea {
-  background-color: rgba(255, 255, 255, 0.08) !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
-  color: #FFFFFF !important;
-}
-
-/* Primary Buttons */
+/* Primary & Secondary Buttons - Bright Contrast Fix */
 .theme-primary-btn {
-  background-color: #C9A24B !important;
-  color: #1B2C4F !important;
-  font-weight: 700 !important;
-  transition: all 0.2s ease !important;
+  background-color: var(--primary-accent) !important;
+  color: #FFFFFF !important;
+  font-weight: 600 !important;
+  border-radius: 0.25rem !important;
+  transition: background-color 0.15s ease, opacity 0.15s ease !important;
+  border: 1px solid var(--primary-accent-hover) !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
 }
 
-.theme-primary-btn:hover {
-  background-color: #D9B35C !important;
-  box-shadow: 0 4px 14px rgba(201, 162, 75, 0.35) !important;
+.theme-primary-btn,
+.theme-primary-btn *,
+.theme-primary-btn span,
+.theme-primary-btn p,
+.theme-primary-btn div,
+.theme-primary-btn svg {
+  color: #FFFFFF !important;
+  stroke: #FFFFFF !important;
 }
 
-/* Scrollbars */
+.theme-primary-btn:hover:not(:disabled) {
+  background-color: var(--primary-accent-hover) !important;
+}
+
+.theme-secondary-btn {
+  background-color: var(--bg-surface) !important;
+  color: var(--text-main) !important;
+  font-weight: 600 !important;
+  border-radius: 0.25rem !important;
+  border: 1px solid var(--border-subtle) !important;
+  transition: background-color 0.15s ease !important;
+}
+
+.theme-secondary-btn,
+.theme-secondary-btn *,
+.theme-secondary-btn span,
+.theme-secondary-btn p,
+.theme-secondary-btn svg {
+  color: var(--text-main) !important;
+}
+
+.theme-secondary-btn:hover:not(:disabled) {
+  background-color: var(--bg-elevated) !important;
+}
+
+button:disabled, .theme-primary-btn:disabled, .theme-secondary-btn:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+  box-shadow: none !important;
+}
+
+/* Status Badges */
+.badge-supported {
+  background-color: var(--bg-elevated) !important;
+  color: var(--color-success) !important;
+  border: 1px solid var(--border-subtle) !important;
+}
+
+.badge-pending {
+  background-color: var(--bg-elevated) !important;
+  color: var(--color-warning) !important;
+  border: 1px solid var(--border-subtle) !important;
+}
+
+.badge-rejected {
+  background-color: var(--bg-elevated) !important;
+  color: var(--color-error) !important;
+  border: 1px solid var(--border-subtle) !important;
+}
+
+/* Restrained Scrollbars */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: var(--bg-page);
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.25);
-  border-radius: 3px;
+  background: var(--border-strong);
+  border-radius: 2px;
 }
+

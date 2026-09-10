@@ -21,12 +21,14 @@ model User {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  casesJudged Case[]         @relation("JudgeCases")
-  casesLawyer Case[]         @relation("LawyerCases")
-  documents   Document[]
-  notifs      Notification[]
-  auditLogs   AuditLog[]
-  draftsSigned DraftOrder[]  @relation("SignedBy")
+  casesJudged      Case[]            @relation("JudgeCases")
+  casesLawyer      Case[]            @relation("LawyerCases")
+  documents        Document[]
+  notifs           Notification[]
+  auditLogs        AuditLog[]
+  draftsSigned     DraftOrder[]      @relation("SignedBy")
+  benchAllocations BenchAllocation[]
+  refreshTokens    RefreshToken[]
 }
 
 model Case {
@@ -76,16 +78,19 @@ model Hearing {
 }
 
 model Document {
-  id         String   @id @default(uuid())
-  caseId     String?
-  case       Case?    @relation(fields: [caseId], references: [id], onDelete: SetNull)
-  fileName   String
-  filePath   String
-  fileSize   Int
-  mimeType   String
-  uploadedBy String
-  uploader   User     @relation(fields: [uploadedBy], references: [id], onDelete: Cascade)
-  uploadedAt DateTime @default(now())
+  id          String   @id @default(uuid())
+  caseId      String?
+  case        Case?    @relation(fields: [caseId], references: [id], onDelete: SetNull)
+  fileName    String
+  filePath    String
+  fileSize    Int
+  mimeType    String
+  uploadedBy  String
+  uploader    User     @relation(fields: [uploadedBy], references: [id], onDelete: Cascade)
+  status      String   @default("UPLOADED") // UPLOADED, PROCESSING, EXTRACTED, INDEXING, INDEXED, FAILED
+  pageCount   Int      @default(0)
+  errorReason String?
+  uploadedAt  DateTime @default(now())
 }
 
 model Evidence {
@@ -147,3 +152,48 @@ model AiAnalysis {
   recommendations String   // JSON string of recommendations
   createdAt       DateTime @default(now())
 }
+
+model BenchAllocation {
+  id        String   @id @default(uuid())
+  judgeId   String
+  judge     User     @relation(fields: [judgeId], references: [id], onDelete: Cascade)
+  courtroom String
+  date      String
+  startTime String
+  endTime   String
+  division  String
+  status    String   @default("Active") // Active, Cancelled, Completed
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Filing {
+  id           String   @id @default(uuid())
+  filingNumber String   @unique
+  applicantId  String?
+  caseId       String?
+  title        String
+  description  String
+  documentId   String?
+  filingType   String   @default("Civil Suit")
+  court        String   @default("District Civil Court")
+  petitioner   String
+  respondent   String
+  status       String   @default("SUBMITTED") // DRAFT, SUBMITTED, UNDER_REVIEW, ACCEPTED, REJECTED
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model RefreshToken {
+  id         String    @id @default(uuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash  String    @unique
+  familyId   String    @default(uuid())
+  expiresAt  DateTime
+  createdAt  DateTime  @default(now())
+  revokedAt  DateTime?
+  rotatedAt  DateTime?
+  deviceInfo String?
+}
+

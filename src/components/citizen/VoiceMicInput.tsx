@@ -60,10 +60,10 @@ export const VoiceMicInput: React.FC<VoiceMicInputProps> = ({ onTranscript, lang
     <button
       type="button"
       onClick={toggleListening}
-      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
         isListening
           ? 'bg-rose-600 text-white animate-pulse shadow-md'
-          : 'bg-white/10 hover:bg-white/20 text-white border border-white/20'
+          : 'theme-secondary-btn border border-subtle'
       }`}
       title="Speak your question using microphone"
     >
@@ -74,7 +74,7 @@ export const VoiceMicInput: React.FC<VoiceMicInputProps> = ({ onTranscript, lang
         </>
       ) : (
         <>
-          <Mic className="w-3.5 h-3.5 text-[#C9A24B]" />
+          <Mic className="w-3.5 h-3.5 text-[var(--primary-accent)]" />
           <span>🎤 Speak Question</span>
         </>
       )}

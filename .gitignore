@@ -1,24 +1,44 @@
-# Logs
-logs
+# Dependencies
+node_modules/
+backend/venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Environment Variables & Secret Configuration
+.env
+*.env
+.env.*
+server/.env
+backend/api/.env
+
+# SQLite Database Files
+*.db
+*.db-journal
+*.sqlite3
+prisma/dev.db
+prisma/dev.db-journal
+server/prisma/dev.db
+server/prisma/dev.db-journal
+
+# Document Upload Artifacts
+server/uploads/
+uploads/
+
+# ChromaDB Persistence Engine Files
+backend/api/rag/chroma_db/
+chroma_db/
+
+# Build & Dist Artifacts
+dist/
+build/
+
+# Logs & Backups
 *.log
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+backups/
 
-node_modules
-dist
-dist-ssr
-*.local
-
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# Operating System Files
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+Thumbs.db

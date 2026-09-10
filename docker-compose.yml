@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  # Express API Gateway & Application Server
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile.server
+    ports:
+      - "5000:5000" # Expose ONLY port 5000 publicly
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - FASTAPI_BASE_URL=http://backend:8000
+      - DATABASE_URL=file:/app/prisma/dev.db
+    env_file:
+      - ./server/.env
+    volumes:
+      - server_uploads:/app/uploads
+      - server_db:/app/prisma
+    networks:
+      - lexora_internal_net
+    restart: unless-stopped
+
+  # Python FastAPI AI & RAG Engine (Private Service)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.backend
+    # Port 8000 is intentionally NOT published externally
+    environment:
+      - ENVIRONMENT=production
+      - CHROMA_DATA_PATH=/app/api/rag/chroma_db
+    env_file:
+      - ./server/.env
+    volumes:
+      - chroma_data:/app/api/rag/chroma_db
+    networks:
+      - lexora_internal_net
+    restart: unless-stopped
+
+volumes:
+  server_uploads:
+  server_db:
+  chroma_data:
+
+networks:
+  lexora_internal_net:
+    driver: bridge
+    internal: false # Internal bridge isolates backend from external internet ingress

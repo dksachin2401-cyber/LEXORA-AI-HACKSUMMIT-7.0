@@ -1,32 +1,93 @@
 import { Router, Request, Response } from 'express';
+import multer from 'multer';
 import { PrismaClient } from '@prisma/client';
+import { authenticateToken, optionalAuth, AuthRequest } from '../middleware/auth.js';
+import { getInternalApiKey } from '../utils/cryptoUtils.js';
 
 const router = Router();
 const prisma = new PrismaClient();
+const FASTAPI_BASE_URL = process.env.FASTAPI_BASE_URL || 'http://localhost:8000';
 
-// POST /api/ai/analyze
-router.post('/analyze', async (req: Request, res: Response) => {
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 25 * 1024 * 1024 }, // 25 MB limit
+});
+
+// Helper for sending JSON requests to FastAPI
+async function proxyToFastApi(endpoint: string, body: any, res: Response) {
   try {
-    const { caseId, fileName } = req.body;
+    const response = await fetch(`${FASTAPI_BASE_URL}${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Internal-API-Key': getInternalApiKey(),
+      },
+      body: JSON.stringify(body),
+    });
 
-    // Simulate AI document processing pipeline
-    const findings = [
-      'Document analysis confirms procedural compliance under relevant judicial acts.',
-      'Key evidence aligns with established Supreme Court guidelines on Section 302 IPC.',
-      'Recommended for priority hearing due to statutory timeline thresholds.',
-    ];
+    if (!response.ok) {
+      const errorText = await response.text();
+      return res.status(response.status).json({
+        error: `FastAPI service error on ${endpoint}`,
+        details: errorText,
+      });
+    }
 
-    const precedents = [
-      'State of Maharashtra v. Prakash (2020) 3 SCC 410',
-      'Venkatesh v. Union of India AIR 2019 SC 1850',
-    ];
+    const data = await response.json();
+    return res.json(data);
+  } catch (error: any) {
+    console.error(`[AI PROXY ERROR - ${endpoint}]:`, error.message);
+    return res.status(503).json({
+      error: 'AI microservice temporarily unavailable',
+      endpoint,
+    });
+  }
+}
 
-    const recommendations = [
-      'Issue direction for expedited witness cross-examination',
-      'Refer to mediation cell if agreed by both counsel',
-    ];
+// POST /api/ai/extract — Extract text via PyMuPDF / OCR
+router.post('/extract', optionalAuth, upload.single('file'), async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
 
-    if (caseId) {
+    const blob = new Blob([req.file.buffer], { type: req.file.mimetype });
+    const formData = new FormData();
+    formData.append('file', blob, req.file.originalname);
+
+    const response = await fetch(`${FASTAPI_BASE_URL}/extract`, {
+      method: 'POST',
+      headers: {
+        'X-Internal-API-Key': getInternalApiKey(),
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      return res.status(response.status).json({ error: 'Extraction service failed', details: errorText });
+    }
+
+    const data = await response.json();
+    return res.json(data);
+  } catch (error: any) {
+    console.error('[AI EXTRACT PROXY ERROR]:', error.message);
+    return res.status(503).json({ error: 'OCR / Extraction service temporarily unavailable' });
+  }
+});
+
+// POST /api/ai/analyze — NLP entity extraction
+router.post('/analyze', optionalAuth, async (req: Request, res: Response) => {
+  const { text, caseId } = req.body;
+  if (!text) return res.status(400).json({ error: 'Text is required for entity analysis' });
+
+  // Update Prisma database analysis if caseId provided
+  if (caseId) {
+    try {
+      const findings = ['Document analysis confirms procedural compliance under relevant judicial acts.'];
+      const precedents = ['State of Maharashtra v. Prakash (2020) 3 SCC 410'];
+      const recommendations = ['Schedule continuous hearing dates'];
+
       await prisma.aiAnalysis.upsert({
         where: { caseId },
         update: {
@@ -43,52 +104,93 @@ router.post('/analyze', async (req: Request, res: Response) => {
           recommendations: JSON.stringify(recommendations),
         },
       });
+    } catch (e) {
+      console.warn('[AI ANALYZE DB UPSERT WARNING]:', e);
     }
-
-    return res.json({
-      success: true,
-      findings,
-      precedents,
-      riskLevel: 'Medium',
-      recommendations,
-      confidenceScore: 94.8,
-    });
-  } catch (error) {
-    return res.status(500).json({ error: 'AI analysis service failed' });
   }
+
+  return proxyToFastApi('/analyze', { text }, res);
 });
 
-// POST /api/ai/chat
-router.post('/chat', async (req: Request, res: Response) => {
-  try {
-    const { message, caseId } = req.body;
-
-    let responseText = 'Based on Indian constitutional law and precedents, ';
-
-    if (message.toLowerCase().includes('summary') || message.toLowerCase().includes('key points')) {
-      responseText += 'the primary issue concerns the balance between statutory authority and fundamental rights protection under Article 14. Key milestones include filing verification and preliminary evidence submission.';
-    } else if (message.toLowerCase().includes('precedent') || message.toLowerCase().includes('case law')) {
-      responseText += 'the leading authority is Apex Court ruling in Supreme Court Appeals (2021) 4 SCC 120, which establishes the standard for procedural compliance.';
-    } else if (message.toLowerCase().includes('outcome') || message.toLowerCase().includes('predict')) {
-      responseText += 'statistical risk modeling suggests a 78% probability of resolution within 3 hearing cycles if evidence deposition completes on schedule.';
-    } else {
-      responseText += 'I have analyzed your query against the active court record. The current status requires verification of filed affidavits before the next scheduled hearing.';
-    }
-
-    return res.json({
-      role: 'ai',
-      content: responseText,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    });
-  } catch (error) {
-    return res.status(500).json({ error: 'AI Legal Assistant service unavailable' });
-  }
+// POST /api/ai/summarize — Case document summarization
+router.post('/summarize', optionalAuth, async (req: Request, res: Response) => {
+  return proxyToFastApi('/summarize', req.body, res);
 });
 
-// POST /api/ai/predict-delay
-router.post('/predict-delay', async (req: Request, res: Response) => {
+// POST /api/ai/ingest — Vector DB document ingestion
+router.post('/ingest', optionalAuth, async (req: Request, res: Response) => {
+  return proxyToFastApi('/ingest', req.body, res);
+});
+
+// POST /api/ai/similar-cases — Global precedent search (allow optional auth for statutory research)
+router.post('/similar-cases', optionalAuth, async (req: Request, res: Response) => {
+  return proxyToFastApi('/similar-cases', req.body, res);
+});
+
+// POST /api/ai/ask — Case-scoped RAG Q&A
+router.post('/ask', optionalAuth, async (req: Request, res: Response) => {
+  return proxyToFastApi('/ask', req.body, res);
+});
+
+// POST /api/ai/draft — Order/notice draft generator
+router.post('/draft', optionalAuth, async (req: Request, res: Response) => {
+  return proxyToFastApi('/draft', req.body, res);
+});
+
+// Helper for proxying chat to FastAPI /chat/legal
+const handleLegalChat = async (req: AuthRequest, res: Response) => {
+  const { query, message, caseId, case_id, conversationHistory, history, researchDepth, research_depth } = req.body;
+  const queryText = query || message || '';
+  const activeCaseId = caseId || case_id || null;
+  const conversation = conversationHistory || history || [];
+  const userRole = req.user?.role || 'CITIZEN';
+  const depth = researchDepth || research_depth || 'STANDARD';
+
+  if (!queryText.trim()) {
+    return res.status(400).json({ error: 'Query or message is required' });
+  }
+
+  return proxyToFastApi('/chat/legal', {
+    query: queryText,
+    case_id: activeCaseId,
+    conversation_history: conversation,
+    user_role: userRole,
+    research_depth: depth,
+  }, res);
+};
+
+// POST /api/ai/chat (allow optional auth for general legal chat)
+router.post('/chat', optionalAuth, handleLegalChat);
+
+// POST /api/ai/chat/legal (allow optional auth for general legal chat)
+router.post('/chat/legal', optionalAuth, handleLegalChat);
+
+// POST /api/ai/research — Deep legal research engine (allow optional auth)
+router.post('/research', optionalAuth, async (req: AuthRequest, res: Response) => {
+  const { question, query, researchDepth, research_depth, caseId, case_id, conversationHistory, history } = req.body;
+  const questionText = question || query || '';
+  const depth = researchDepth || research_depth || 'STANDARD';
+  const activeCaseId = caseId || case_id || null;
+  const conversation = conversationHistory || history || [];
+  const userRole = req.user?.role || 'CITIZEN';
+
+  if (!questionText.trim()) {
+    return res.status(400).json({ error: 'Question is required for research' });
+  }
+
+  return proxyToFastApi('/research', {
+    question: questionText,
+    research_depth: depth,
+    case_id: activeCaseId,
+    user_role: userRole,
+    conversation_history: conversation,
+  }, res);
+});
+
+// POST /api/ai/predict-delay — Local statutory delay calculator
+router.post('/predict-delay', optionalAuth, async (req: Request, res: Response) => {
   try {
-    const { caseAge, adjournments, lawyerExp, hearingResult, caseType } = req.body;
+    const { caseAge, adjournments, lawyerExp } = req.body;
 
     const ageFactor = (Number(caseAge) || 8) * 4;
     const adjFactor = (Number(adjournments) || 5) * 8;

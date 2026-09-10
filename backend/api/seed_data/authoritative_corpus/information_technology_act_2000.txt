@@ -1,0 +1,16 @@
+INFORMATION TECHNOLOGY ACT, 2000 — ACT NO. 21 OF 2000
+Source: Ministry of Electronics and Information Technology / Legislative Department / India Code
+Authority Level: 1 (Primary Cyber Law Statute)
+Jurisdiction: Republic of India
+Status: IN_FORCE
+
+CHAPTER IX — OFFENCES AND PENALTIES
+
+Section 43A: Compensation for failure to protect data.
+Where a body corporate, possessing, dealing or handling any sensitive personal data or information in a computer resource which it owns, controls or operates, is negligent in implementing and maintaining reasonable security practices and procedures and thereby causes wrongful loss or wrongful gain to any person, such body corporate shall be liable to pay damages by way of compensation to the person so affected.
+
+Section 66C: Punishment for identity theft.
+Whoever, fraudulently or dishonestly make use of the electronic signature, password or any other unique identification feature of any other person, shall be punished with imprisonment of either description for a term which may extend to three years and shall also be liable to fine which may extend to one lakh rupees.
+
+Section 66D: Punishment for cheating by personation by using computer resource.
+Whoever, by means of any communication device or computer resource cheats by personation, shall be punished with imprisonment of either description for a term which may extend to three years and shall also be liable to fine which may extend to one lakh rupees.

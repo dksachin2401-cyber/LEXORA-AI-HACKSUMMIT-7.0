@@ -70,47 +70,47 @@ export const HomePage = () => {
       <header className="w-full px-6 py-4 theme-header sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-[#C9A24B] flex items-center justify-center shadow-md shrink-0">
-              <Scale className="w-5 h-5 text-[#1B2C4F]" />
+            <div className="w-9 h-9 rounded-md theme-primary-btn flex items-center justify-center shadow-md shrink-0">
+              <Scale className="w-5 h-5 text-white" />
             </div>
             <div>
-              <span className="text-xl font-bold font-serif tracking-wider theme-heading block leading-none">
-                LEXORA <span className="text-[#C9A24B]">AI</span>
+              <span className="text-xl font-bold font-serif tracking-tight theme-heading block leading-none">
+                LEXORA <span className="opacity-80">AI</span>
               </span>
-              <span className="text-[10px] theme-subtext tracking-widest uppercase font-sans block mt-1">
-                Justice, accelerated. Judgment, preserved.
+              <span className="text-[10px] theme-subtext tracking-wider uppercase font-mono block mt-1">
+                Judicial Intelligence Platform
               </span>
             </div>
           </div>
           
           <div className="flex items-center gap-3">
-            {/* Working Light / Dark Theme Toggle Button */}
+            {/* Light / Dark Theme Toggle Button */}
             <button
               type="button"
               onClick={toggleTheme}
-              className="flex items-center gap-2 px-3.5 py-2 rounded-lg border border-slate-300 dark:border-white/20 bg-white dark:bg-white/10 hover:border-[#C9A24B] transition-all cursor-pointer text-xs font-bold text-slate-800 dark:text-white shadow-sm"
-              title="Toggle Theme"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-subtle theme-card hover:opacity-80 transition-all cursor-pointer text-xs font-mono font-medium shadow-xs"
+              title="Toggle Light/Dark Theme"
             >
               {theme === 'dark' ? (
                 <>
                   <Sun className="w-4 h-4 text-amber-400" />
-                  <span>Light Mode</span>
+                  <span>☀ Light</span>
                 </>
               ) : (
                 <>
-                  <Moon className="w-4 h-4 text-[#1B2C4F]" />
-                  <span>Dark Mode</span>
+                  <Moon className="w-4 h-4 text-slate-700" />
+                  <span>☾ Dark</span>
                 </>
               )}
             </button>
 
-            {/* Sign In / Login */}
+            {/* Sign In / Access Workspace */}
             <button
               onClick={() => navigate('/login')}
-              className="px-5 py-2 theme-primary-btn text-xs rounded-lg shadow-md cursor-pointer flex items-center gap-1.5"
+              className="px-4 py-1.5 theme-primary-btn text-xs rounded-md shadow-xs cursor-pointer flex items-center gap-1.5 font-medium"
             >
               <Lock className="w-3.5 h-3.5" />
-              <span>Sign In / Login</span>
+              <span>Sign In / Access Workspace</span>
             </button>
           </div>
         </div>
@@ -126,29 +126,25 @@ export const HomePage = () => {
         >
           {/* Hero Section */}
           <motion.div variants={itemVariants} className="text-center space-y-6 max-w-3xl mx-auto">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs font-semibold tracking-wide">
-              <Shield className="w-4 h-4 text-amber-500" />
-              <span>Human-in-the-Loop Judicial Decision Support</span>
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-slate-500/10 border border-slate-400/20 text-xs font-mono font-medium tracking-wide">
+              <Shield className="w-4 h-4 text-slate-500" />
+              <span>Human-in-the-Loop Judicial Decision Support System</span>
             </div>
 
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-serif font-extrabold theme-heading tracking-tight leading-tight">
-              Lexora Judicial Intelligence
+              LEXORA Judicial Workstation
             </h1>
 
-            <p className="text-lg sm:text-xl text-[#C9A24B] font-serif italic font-medium">
-              "Justice, accelerated. Judgment, preserved."
-            </p>
-
-            <p className="text-xs sm:text-sm theme-subtext max-w-2xl mx-auto leading-relaxed">
-              Autonomous legal decision support for Judges, Lawyers, Court Staff, and Citizens. Every AI action is reviewable and human-verified prior to execution.
+            <p className="text-base sm:text-lg theme-subtext max-w-2xl mx-auto leading-relaxed">
+              Institutional AI decision support for Judges, Lawyers, Court Staff, and Citizens. Grounded in authoritative Indian legal precedent with verifiable citation trails.
             </p>
 
             <div className="pt-2">
               <button 
                 onClick={() => navigate('/login')}
-                className="px-8 py-3.5 theme-primary-btn text-sm rounded-xl transition-all shadow-xl inline-flex items-center justify-center gap-2 cursor-pointer"
+                className="px-6 py-2.5 theme-primary-btn text-sm rounded-md transition-all shadow-md inline-flex items-center justify-center gap-2 cursor-pointer font-medium"
               >
-                <span>Authenticate Official Portal Access</span>
+                <span>Access Workstation</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
@@ -169,13 +165,13 @@ export const HomePage = () => {
                   className="theme-card p-6 rounded-xl cursor-pointer transition-all group flex flex-col justify-between"
                 >
                   <div>
-                    <div className="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mb-4 text-[#C9A24B]">
-                      <role.icon className="w-5 h-5 text-[#C9A24B]" />
+                    <div className="w-10 h-10 rounded-lg bg-[var(--primary-accent)]/10 border border-[var(--primary-accent)]/30 flex items-center justify-center mb-4 text-[var(--primary-accent)]">
+                      <role.icon className="w-5 h-5 text-[var(--primary-accent)]" />
                     </div>
                     <h3 className="text-base font-bold font-serif theme-heading mb-2">{role.title}</h3>
                     <p className="text-xs theme-subtext leading-relaxed mb-4">{role.desc}</p>
                   </div>
-                  <div className="flex items-center text-xs text-[#C9A24B] font-bold group-hover:translate-x-1 transition-transform">
+                  <div className="flex items-center text-xs text-[var(--primary-accent)] font-bold group-hover:translate-x-1 transition-transform">
                     <Lock className="w-3.5 h-3.5 mr-1" />
                     <span>Authenticate & Sign In</span>
                     <ArrowRight className="w-3.5 h-3.5 ml-1" />
@@ -193,7 +189,7 @@ export const HomePage = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {features.map((feat, idx) => (
                 <div key={idx} className="theme-card p-5 rounded-xl space-y-2">
-                  <feat.icon className="w-5 h-5 text-[#C9A24B] mb-2" />
+                  <feat.icon className="w-5 h-5 text-[var(--primary-accent)] mb-2" />
                   <h4 className="text-sm font-serif font-bold theme-heading">{feat.title}</h4>
                   <p className="text-xs theme-subtext leading-relaxed">{feat.desc}</p>
                 </div>
@@ -204,10 +200,10 @@ export const HomePage = () => {
       </main>
 
       {/* Footer */}
-      <footer className="w-full px-6 py-4 theme-header border-t mt-auto">
+      <footer className="w-full px-6 py-4 theme-header border-t border-subtle mt-auto">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-3 text-xs theme-subtext">
           <div className="flex items-center gap-2 font-serif font-bold theme-heading">
-            <Scale className="w-4 h-4 text-[#C9A24B]" />
+            <Scale className="w-4 h-4 text-[var(--primary-accent)]" />
             <span>LEXORA AI — Judicial Intelligence Platform</span>
           </div>
           <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20 font-semibold">

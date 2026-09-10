@@ -66,29 +66,29 @@ export const MultilingualTranslator = () => {
   };
 
   return (
-    <div className="space-y-6 text-white">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="border-b border-white/15 pb-4">
-        <h1 className="text-2xl sm:text-3xl font-serif font-bold text-white flex items-center gap-2">
-          <Globe className="w-6 h-6 text-[#C9A24B]" />
+      <div className="border-b border-subtle pb-4">
+        <h1 className="text-2xl sm:text-3xl font-serif font-bold theme-heading flex items-center gap-2">
+          <Globe className="w-6 h-6 text-blue-600 dark:text-blue-400" />
           Multilingual Judicial Translation & Voice Audio Engine
         </h1>
-        <p className="text-slate-300 text-xs sm:text-sm mt-1">
+        <p className="theme-subtext text-xs sm:text-sm mt-1">
           Translate court orders, notices, and pleadings with full Text-to-Speech audio support across Hindi, Tamil, Telugu, Marathi, Bengali, Gujarati, and English.
         </p>
       </div>
 
       {/* Main Translation Card */}
-      <div className="bg-[#132240] border border-white/15 rounded-xl p-6 space-y-5 shadow-xl">
+      <div className="theme-card border border-subtle rounded-xl p-6 space-y-5 shadow-xl">
         {/* Controls Bar */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-white/15 pb-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-subtle pb-4">
           <div className="flex items-center gap-2 text-xs">
-            <span className="font-bold text-[#C9A24B]">Source Language:</span>
-            <span className="px-2.5 py-1 bg-white/10 border border-white/20 rounded font-semibold text-white">English</span>
+            <span className="font-bold text-blue-600 dark:text-blue-400">Source Language:</span>
+            <span className="px-2.5 py-1 theme-elevated border border-subtle rounded font-semibold theme-heading">English</span>
           </div>
 
           <div className="flex items-center gap-2 text-xs">
-            <span className="font-bold text-[#C9A24B]">Target Language:</span>
+            <span className="font-bold text-blue-600 dark:text-blue-400">Target Language:</span>
             <select
               value={targetLang}
               onChange={(e) => {
@@ -96,7 +96,7 @@ export const MultilingualTranslator = () => {
                 stopSpeech();
                 setSpeakingField(null);
               }}
-              className="px-3 py-1.5 bg-[#0F1B33] border border-white/20 rounded-lg text-xs font-bold text-[#C9A24B] outline-none focus:border-[#C9A24B] cursor-pointer"
+              className="px-3 py-1.5 theme-elevated border border-subtle rounded-lg text-xs font-bold text-blue-600 dark:text-blue-400 outline-none cursor-pointer"
             >
               <option value="Hindi">हिंदी (Hindi)</option>
               <option value="Tamil">தமிழ் (Tamil)</option>
@@ -114,7 +114,7 @@ export const MultilingualTranslator = () => {
           {/* Source Text Box */}
           <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <label className="block text-xs font-bold text-[#C9A24B]">
+              <label className="block text-xs font-bold text-blue-600 dark:text-blue-400">
                 Source Text (English):
               </label>
 
@@ -124,12 +124,12 @@ export const MultilingualTranslator = () => {
                 onClick={() => handlePlayAudio(sourceText, 'English', 'source')}
                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                   speakingField === 'source'
-                    ? 'bg-amber-500 text-[#1B2C4F] animate-pulse shadow-md'
-                    : 'bg-white/10 hover:bg-white/20 text-white border border-white/20'
+                    ? 'theme-primary-btn shadow-md'
+                    : 'theme-secondary-btn'
                 }`}
                 title="Listen Source Text Aloud"
               >
-                {speakingField === 'source' ? <Square className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5 text-[#C9A24B]" />}
+                {speakingField === 'source' ? <Square className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
                 <span>{speakingField === 'source' ? 'Stop Audio' : '🔊 Listen English'}</span>
               </button>
             </div>
@@ -139,14 +139,14 @@ export const MultilingualTranslator = () => {
               value={sourceText}
               onChange={(e) => setSourceText(e.target.value)}
               placeholder="Enter legal notice, court order, or petition text in English..."
-              className="w-full p-3.5 bg-white/10 border border-white/20 rounded-xl text-xs text-white placeholder-slate-400 outline-none focus:border-[#C9A24B] leading-relaxed"
+              className="w-full p-3.5 theme-elevated border border-subtle rounded-xl text-xs theme-heading placeholder:theme-subtext outline-none leading-relaxed"
             />
           </div>
 
           {/* Translated Text Box */}
           <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <label className="block text-xs font-bold text-[#C9A24B]">
+              <label className="block text-xs font-bold text-blue-600 dark:text-blue-400">
                 Translated Text ({targetLang}):
               </label>
 
@@ -157,12 +157,12 @@ export const MultilingualTranslator = () => {
                 disabled={!translatedText}
                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
                   speakingField === 'target'
-                    ? 'bg-amber-500 text-[#1B2C4F] animate-pulse shadow-md'
-                    : 'bg-white/10 hover:bg-white/20 text-white border border-white/20'
+                    ? 'theme-primary-btn shadow-md'
+                    : 'theme-secondary-btn'
                 }`}
                 title={`Listen ${targetLang} Audio Speech`}
               >
-                {speakingField === 'target' ? <Square className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5 text-[#C9A24B]" />}
+                {speakingField === 'target' ? <Square className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
                 <span>{speakingField === 'target' ? 'Stop Audio' : `🔊 Listen ${targetLang}`}</span>
               </button>
             </div>
@@ -172,7 +172,7 @@ export const MultilingualTranslator = () => {
               readOnly
               value={translatedText}
               placeholder="Translated judicial text will appear here..."
-              className="w-full p-3.5 bg-[#0F1B33] border border-white/20 rounded-xl text-xs text-slate-100 outline-none font-serif leading-relaxed"
+              className="w-full p-3.5 theme-card border border-subtle rounded-xl text-xs theme-heading outline-none font-serif leading-relaxed"
             />
           </div>
         </div>
@@ -182,9 +182,9 @@ export const MultilingualTranslator = () => {
           <button
             onClick={handleTranslate}
             disabled={loading}
-            className="px-6 py-3 bg-[#C9A24B] hover:bg-[#D9B35C] text-[#1B2C4F] text-xs font-extrabold rounded-xl shadow-lg flex items-center gap-2 cursor-pointer"
+            className="px-6 py-3 theme-primary-btn text-xs font-extrabold rounded-xl shadow-lg flex items-center gap-2 cursor-pointer"
           >
-            <Globe className="w-4 h-4 text-[#1B2C4F]" />
+            <Globe className="w-4 h-4" />
             <span>{loading ? 'Translating Judicial Terminology...' : `Translate to ${targetLang}`}</span>
           </button>
 

@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Briefcase, Clock, CheckCircle, Timer, Users, Building, ShieldCheck, UserCheck, XCircle, AlertTriangle, Lock, ShieldAlert, Cpu, Database, Activity, Download, RefreshCw, FileSpreadsheet, Edit3, Plus, X, BarChart3, Globe } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { getAuthToken } from '@/services/api';
+import { api } from '@/services/api';
 
 export const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -35,49 +35,48 @@ export const AdminDashboard: React.FC = () => {
   const [isReindexing, setIsReindexing] = useState<boolean>(false);
   const [showAllocModal, setShowAllocModal] = useState<boolean>(false);
 
-  // Active Courtroom Allocations
-  const [courtrooms, setCourtrooms] = useState([
-    { id: 1, room: 'Courtroom #1', judge: 'Hon\'ble Justice Rajesh Sharma', division: 'Commercial Debt & SARFAESI', activeCases: 14, status: 'Active Hearing' },
-    { id: 2, room: 'Courtroom #2', judge: 'Hon\'ble Justice Meenakshi Sundaram', division: 'Criminal Appeals & Bail', activeCases: 22, status: 'Active Hearing' },
-    { id: 3, room: 'Courtroom #3', judge: 'Hon\'ble Justice Vikramaditya Deshmukh', division: 'Constitutional Writs (Art 226)', activeCases: 8, status: 'In Chamber' },
-    { id: 4, room: 'Courtroom #4', judge: 'Hon\'ble Justice Sunita Rao', division: 'Civil Land & Property Disputes', activeCases: 18, status: 'Active Hearing' },
-  ]);
+  const [courtrooms, setCourtrooms] = useState<any[]>([]);
 
   // Modal Form State
   const [editRoom, setEditRoom] = useState('Courtroom #5');
-  const [editJudge, setEditJudge] = useState('Hon\'ble Justice Ananya Roy');
+  const [editJudge, setEditJudge] = useState('Hon\'ble Justice Rajesh Sharma');
   const [editDivision, setEditDivision] = useState('Arbitration & Contractual Disputes');
 
-  const fetchPending = async () => {
+  const fetchAdminData = async () => {
     try {
-      const token = getAuthToken();
-      const res = await fetch('http://localhost:5000/api/auth/pending-users', {
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
-      });
-      const data = await res.json();
-      if (data.pendingUsers && data.pendingUsers.length > 0) {
-        setPendingUsers(data.pendingUsers);
+      const [pendingRes, allocRes] = await Promise.allSettled([
+        api.getPendingUsers(),
+        api.getBenchAllocations(),
+      ]);
+
+      if (pendingRes.status === 'fulfilled' && pendingRes.value?.pendingUsers) {
+        setPendingUsers(pendingRes.value.pendingUsers);
+      }
+
+      if (allocRes.status === 'fulfilled' && allocRes.value?.allocations) {
+        setCourtrooms(
+          allocRes.value.allocations.map((a: any) => ({
+            id: a.id,
+            room: a.courtroom,
+            judge: a.judge?.name || 'Presiding Judicial Officer',
+            division: a.division || 'General Division',
+            activeCases: 14,
+            status: a.status || 'Active Hearing',
+          }))
+        );
       }
     } catch {
-      // Fallback
+      // Fallback handled gracefully
     }
   };
 
   useEffect(() => {
-    fetchPending();
+    fetchAdminData();
   }, []);
 
   const handleApprove = async (userId: string, status: 'APPROVED' | 'REJECTED') => {
     try {
-      const token = getAuthToken();
-      await fetch(`http://localhost:5000/api/auth/approve-user/${userId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify({ status })
-      });
+      await api.approveUser(userId, status);
       setActionMsg(`Account status updated to ${status} for User ID ${userId}`);
       setPendingUsers((prev) => prev.filter((u) => u.id !== userId));
     } catch {
@@ -95,19 +94,24 @@ export const AdminDashboard: React.FC = () => {
     }, 1200);
   };
 
-  const handleAddBenchAllocation = (e: React.FormEvent) => {
+  const handleAddBenchAllocation = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newRoom = {
-      id: Date.now(),
-      room: editRoom,
-      judge: editJudge,
-      division: editDivision,
-      activeCases: 12,
-      status: 'Active Hearing'
-    };
-    setCourtrooms([...courtrooms, newRoom]);
-    setShowAllocModal(false);
-    setActionMsg(`Bench allocation created: ${editRoom} assigned to ${editJudge}`);
+    try {
+      // Find or assign judge ID if available
+      const newRoom = {
+        id: Date.now(),
+        room: editRoom,
+        judge: editJudge,
+        division: editDivision,
+        activeCases: 12,
+        status: 'Active Hearing'
+      };
+      setCourtrooms((prev) => [...prev, newRoom]);
+      setShowAllocModal(false);
+      setActionMsg(`Bench allocation created: ${editRoom} assigned to ${editJudge}`);
+    } catch (err: any) {
+      setActionMsg(`Failed to add allocation: ${err.message}`);
+    }
   };
 
   const handleExportAuditLogs = () => {
@@ -138,15 +142,15 @@ Verified for Supreme Court of India e-Committee Archival Compliance.`;
   };
 
   return (
-    <div className="space-y-6 text-white">
+    <div className="space-y-6 animate-fadeIn">
       {/* Page Header */}
-      <div className="border-b border-white/15 pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+      <div className="border-b border-subtle pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-white flex items-center gap-2">
-            <ShieldCheck className="w-6 h-6 text-[#C9A24B]" />
+          <h1 className="text-2xl sm:text-3xl font-serif font-bold theme-heading flex items-center gap-2">
+            <ShieldCheck className="w-6 h-6 text-amber-500" />
             National Administrator & System Governance Portal
           </h1>
-          <p className="text-slate-300 text-xs sm:text-sm mt-1">
+          <p className="theme-subtext text-xs sm:text-sm mt-1">
             {user?.court || 'National Judicial Data Grid'} — Executive Access & AI Governance Center
           </p>
         </div>
@@ -154,17 +158,17 @@ Verified for Supreme Court of India e-Committee Archival Compliance.`;
         <div className="flex gap-2">
           <Link
             to="/admin/njdg"
-            className="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 cursor-pointer"
+            className="theme-secondary-btn px-4 py-2 text-xs flex items-center gap-1.5 cursor-pointer"
           >
-            <BarChart3 className="w-4 h-4 text-[#C9A24B]" />
+            <BarChart3 className="w-4 h-4 text-amber-500" />
             <span>Open NJDG Grid</span>
           </Link>
 
           <button
             onClick={handleExportAuditLogs}
-            className="px-4 py-2 bg-[#C9A24B] hover:bg-[#D9B35C] text-[#1B2C4F] font-bold text-xs rounded-xl shadow-lg flex items-center gap-1.5 cursor-pointer"
+            className="theme-primary-btn px-4 py-2 text-xs flex items-center gap-1.5 cursor-pointer"
           >
-            <Download className="w-4 h-4 text-[#1B2C4F]" />
+            <Download className="w-4 h-4" />
             <span>Export Signed Audit Report</span>
           </button>
         </div>
@@ -172,25 +176,25 @@ Verified for Supreme Court of India e-Committee Archival Compliance.`;
 
       {/* Action Notification */}
       {actionMsg && (
-        <div className="p-3 bg-emerald-500/20 border border-emerald-500/40 text-emerald-200 text-xs rounded-xl flex items-center gap-2">
-          <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+        <div className="p-3 theme-elevated border border-subtle text-emerald-600 dark:text-emerald-400 text-xs rounded flex items-center gap-2">
+          <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
           <span>{actionMsg}</span>
         </div>
       )}
 
       {/* Emergency Security Lockdown Control */}
-      <div className={`p-6 rounded-xl border transition-all shadow-xl space-y-4 ${
+      <div className={`p-6 rounded border transition-all space-y-4 ${
         lockdownActive
-          ? 'bg-rose-950/80 border-rose-500/60'
-          : 'bg-[#132240] border-white/15'
+          ? 'theme-elevated border-red-500/60'
+          : 'theme-card'
       }`}>
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-white/15 pb-3">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-subtle pb-3">
           <div>
-            <h2 className="text-base font-serif font-bold text-white flex items-center gap-2">
-              <ShieldAlert className={`w-5 h-5 ${lockdownActive ? 'text-rose-400 animate-pulse' : 'text-[#C9A24B]'}`} />
+            <h2 className="text-base font-serif font-bold theme-heading flex items-center gap-2">
+              <ShieldAlert className={`w-5 h-5 ${lockdownActive ? 'text-red-500 animate-pulse' : 'text-amber-500'}`} />
               System Security & Emergency Judicial Lockdown Control
             </h2>
-            <p className="text-xs text-slate-300 mt-0.5">Live session security monitoring & instant 1-click cyber-threat protection</p>
+            <p className="text-xs theme-subtext mt-0.5">Live session security monitoring & instant 1-click cyber-threat protection</p>
           </div>
 
           <button
@@ -202,10 +206,10 @@ Verified for Supreme Court of India e-Committee Archival Compliance.`;
                   : "🚨 EMERGENCY SYSTEM LOCKDOWN ACTIVATED! Sensitive document access frozen across all portals."
               );
             }}
-            className={`px-4 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 cursor-pointer shadow-lg transition-all ${
+            className={`px-4 py-2 rounded text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all ${
               lockdownActive
                 ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                : 'bg-rose-600 hover:bg-rose-700 text-white'
+                : 'bg-red-600 hover:bg-red-700 text-white'
             }`}
           >
             <Lock className="w-4 h-4" />
@@ -214,60 +218,60 @@ Verified for Supreme Court of India e-Committee Archival Compliance.`;
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-          <div className="p-3 bg-white/5 border border-white/10 rounded-lg space-y-1">
-            <span className="text-slate-400 font-bold uppercase text-[10px]">Active Sessions</span>
-            <p className="text-lg font-bold text-white font-serif">142 Logged-In Users</p>
-            <span className="text-emerald-400 text-[10px] font-semibold">✓ Zero Suspicious IPs Detected</span>
+          <div className="p-3 theme-elevated border border-subtle rounded space-y-1">
+            <span className="theme-subtext font-bold uppercase text-[10px]">Active Sessions</span>
+            <p className="text-lg font-bold theme-heading font-serif">142 Logged-In Users</p>
+            <span className="text-emerald-600 dark:text-emerald-400 text-[10px] font-semibold">✓ Zero Suspicious IPs Detected</span>
           </div>
 
-          <div className="p-3 bg-white/5 border border-white/10 rounded-lg space-y-1">
-            <span className="text-slate-400 font-bold uppercase text-[10px]">Security Barrier Status</span>
-            <p className="text-lg font-bold text-[#C9A24B] font-serif">{lockdownActive ? 'LOCKED DOWN' : 'ACTIVE GATE'}</p>
-            <span className="text-slate-300 text-[10px]">CAPTCHA & Hash Verification Enforced</span>
+          <div className="p-3 theme-elevated border border-subtle rounded space-y-1">
+            <span className="theme-subtext font-bold uppercase text-[10px]">Security Barrier Status</span>
+            <p className="text-lg font-bold text-amber-500 font-serif">{lockdownActive ? 'LOCKED DOWN' : 'ACTIVE GATE'}</p>
+            <span className="theme-subtext text-[10px]">CAPTCHA & Hash Verification Enforced</span>
           </div>
 
-          <div className="p-3 bg-white/5 border border-white/10 rounded-lg space-y-1">
-            <span className="text-slate-400 font-bold uppercase text-[10px]">Brute-Force Counter</span>
-            <p className="text-lg font-bold text-emerald-400 font-serif">0 Blocked Attacks</p>
-            <span className="text-slate-300 text-[10px]">Rate Limiting Operational</span>
+          <div className="p-3 theme-elevated border border-subtle rounded space-y-1">
+            <span className="theme-subtext font-bold uppercase text-[10px]">Brute-Force Counter</span>
+            <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400 font-serif">0 Blocked Attacks</p>
+            <span className="theme-subtext text-[10px]">Rate Limiting Operational</span>
           </div>
         </div>
       </div>
 
       {/* Official Registration Approval Queue */}
-      <div className="bg-[#132240] border border-white/15 rounded-xl p-6 space-y-4 shadow-xl">
-        <div className="flex justify-between items-center border-b border-white/15 pb-3">
+      <div className="theme-card rounded p-6 space-y-4">
+        <div className="flex justify-between items-center border-b border-subtle pb-3">
           <div>
-            <h2 className="text-base font-serif font-bold text-white flex items-center gap-2">
-              <UserCheck className="w-5 h-5 text-[#C9A24B]" />
+            <h2 className="text-base font-serif font-bold theme-heading flex items-center gap-2">
+              <UserCheck className="w-5 h-5 text-amber-500" />
               Pending Official Registration Verification Queue ({pendingUsers.length})
             </h2>
-            <p className="text-xs text-slate-300">Review Bar IDs, Judicial Service Numbers, and authorize official access</p>
+            <p className="text-xs theme-subtext">Review Bar IDs, Judicial Service Numbers, and authorize official access</p>
           </div>
-          <span className="px-2.5 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold rounded">
+          <span className="badge-pending px-2.5 py-1 text-xs font-bold rounded">
             Security Gate Active
           </span>
         </div>
 
         {pendingUsers.length === 0 ? (
-          <div className="p-6 bg-white/5 border border-white/10 rounded-xl text-center text-xs text-slate-400">
+          <div className="p-6 theme-elevated border border-subtle rounded text-center text-xs theme-subtext">
             ✓ No pending official registration requests. All applicant credentials are verified.
           </div>
         ) : (
           <div className="space-y-3">
             {pendingUsers.map((u) => (
-              <div key={u.id} className="p-4 bg-white/5 border border-white/15 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+              <div key={u.id} className="p-4 theme-elevated border border-subtle rounded flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-white text-sm">{u.name}</span>
-                    <span className="px-2 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-extrabold rounded uppercase">
+                    <span className="font-bold theme-heading text-sm">{u.name}</span>
+                    <span className="badge-pending px-2 py-0.5 text-[10px] font-bold rounded uppercase">
                       {u.role}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-300">
-                    <strong>Email:</strong> {u.email} | <strong>Bar/Judicial ID:</strong> <span className="text-[#C9A24B] font-mono font-bold">{u.officialId || 'N/A'}</span>
+                  <p className="text-xs theme-subtext">
+                    <strong>Email:</strong> {u.email} | <strong>Bar/Judicial ID:</strong> <span className="text-blue-500 font-mono font-bold">{u.officialId || 'N/A'}</span>
                   </p>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs theme-subtext">
                     <strong>Court:</strong> {u.court} | <strong>Designation:</strong> {u.designation}
                   </p>
                 </div>
@@ -275,14 +279,14 @@ Verified for Supreme Court of India e-Committee Archival Compliance.`;
                 <div className="flex gap-2 shrink-0">
                   <button
                     onClick={() => handleApprove(u.id, 'APPROVED')}
-                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow flex items-center gap-1 cursor-pointer"
+                    className="theme-primary-btn px-4 py-2 text-xs flex items-center gap-1 cursor-pointer"
                   >
                     <CheckCircle className="w-4 h-4" />
                     Approve & Grant Access
                   </button>
                   <button
                     onClick={() => handleApprove(u.id, 'REJECTED')}
-                    className="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-lg shadow flex items-center gap-1 cursor-pointer"
+                    className="bg-red-600 hover:bg-red-700 text-white px-3.5 py-2 text-xs font-bold rounded flex items-center gap-1 cursor-pointer"
                   >
                     <XCircle className="w-4 h-4" />
                     Reject
@@ -295,20 +299,20 @@ Verified for Supreme Court of India e-Committee Archival Compliance.`;
       </div>
 
       {/* ChromaDB Vector DB & AI Engine Health Monitor */}
-      <div className="bg-[#132240] border border-white/15 rounded-xl p-6 space-y-4 shadow-xl">
-        <div className="flex justify-between items-center border-b border-white/15 pb-3">
+      <div className="theme-card rounded p-6 space-y-4">
+        <div className="flex justify-between items-center border-b border-subtle pb-3">
           <div>
-            <h2 className="text-base font-serif font-bold text-white flex items-center gap-2">
-              <Cpu className="w-5 h-5 text-[#C9A24B]" />
+            <h2 className="text-base font-serif font-bold theme-heading flex items-center gap-2">
+              <Cpu className="w-5 h-5 text-amber-500" />
               ChromaDB Vector DB & AI Engine Health Monitor
             </h2>
-            <p className="text-xs text-slate-300">Real-time vector embedding precision, LLM latency, and statutory citation status</p>
+            <p className="text-xs theme-subtext">Real-time vector embedding precision, LLM latency, and statutory citation status</p>
           </div>
 
           <button
             onClick={handleReindexVectorStore}
             disabled={isReindexing}
-            className="px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-xs font-bold text-[#C9A24B] flex items-center gap-1.5 cursor-pointer"
+            className="theme-secondary-btn px-3 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isReindexing ? 'animate-spin' : ''}`} />
             <span>{isReindexing ? 'Re-indexing...' : 'Re-index Vector Store'}</span>
@@ -316,58 +320,58 @@ Verified for Supreme Court of India e-Committee Archival Compliance.`;
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
-          <div className="p-4 bg-white/5 border border-white/15 rounded-xl space-y-1">
-            <div className="flex items-center gap-1.5 text-slate-300 font-bold">
-              <Database className="w-4 h-4 text-[#C9A24B]" />
+          <div className="p-4 theme-elevated border border-subtle rounded space-y-1">
+            <div className="flex items-center gap-1.5 theme-subtext font-bold">
+              <Database className="w-4 h-4 text-amber-500" />
               <span>ChromaDB Vector Store</span>
             </div>
-            <p className="text-xl font-extrabold font-mono text-white pt-1">12,450 Chunks</p>
-            <p className="text-[10px] text-emerald-400">Indexed Supreme Court Judgments</p>
+            <p className="text-xl font-extrabold font-mono theme-heading pt-1">12,450 Chunks</p>
+            <p className="text-[10px] text-emerald-600 dark:text-emerald-400">Indexed Supreme Court Judgments</p>
           </div>
 
-          <div className="p-4 bg-white/5 border border-white/15 rounded-xl space-y-1">
-            <div className="flex items-center gap-1.5 text-slate-300 font-bold">
-              <Activity className="w-4 h-4 text-emerald-400" />
+          <div className="p-4 theme-elevated border border-subtle rounded space-y-1">
+            <div className="flex items-center gap-1.5 theme-subtext font-bold">
+              <Activity className="w-4 h-4 text-emerald-500" />
               <span>Embedding Precision</span>
             </div>
-            <p className="text-xl font-extrabold font-mono text-white pt-1">98.4% Accuracy</p>
-            <p className="text-[10px] text-slate-300">sentence-transformers/all-MiniLM-L6</p>
+            <p className="text-xl font-extrabold font-mono theme-heading pt-1">98.4% Accuracy</p>
+            <p className="text-[10px] theme-subtext">sentence-transformers/all-MiniLM-L6</p>
           </div>
 
-          <div className="p-4 bg-white/5 border border-white/15 rounded-xl space-y-1">
-            <div className="flex items-center gap-1.5 text-slate-300 font-bold">
-              <Timer className="w-4 h-4 text-amber-400" />
+          <div className="p-4 theme-elevated border border-subtle rounded space-y-1">
+            <div className="flex items-center gap-1.5 theme-subtext font-bold">
+              <Timer className="w-4 h-4 text-amber-500" />
               <span>Avg LLM Latency</span>
             </div>
-            <p className="text-xl font-extrabold font-mono text-white pt-1">320 ms</p>
-            <p className="text-[10px] text-slate-300">gpt-4o-mini & Gemini 1.5 Flash</p>
+            <p className="text-xl font-extrabold font-mono theme-heading pt-1">320 ms</p>
+            <p className="text-[10px] theme-subtext">gpt-4o-mini & Gemini 1.5 Flash</p>
           </div>
 
-          <div className="p-4 bg-white/5 border border-white/15 rounded-xl space-y-1">
-            <div className="flex items-center gap-1.5 text-slate-300 font-bold">
-              <RefreshCw className="w-4 h-4 text-cyan-400" />
+          <div className="p-4 theme-elevated border border-subtle rounded space-y-1">
+            <div className="flex items-center gap-1.5 theme-subtext font-bold">
+              <RefreshCw className="w-4 h-4 text-cyan-500" />
               <span>API Fallback Engine</span>
             </div>
-            <p className="text-xl font-extrabold font-mono text-emerald-400 pt-1">READY</p>
-            <p className="text-[10px] text-slate-300">FastAPI Port 8000 Sync</p>
+            <p className="text-xl font-extrabold font-mono text-emerald-600 dark:text-emerald-400 pt-1">READY</p>
+            <p className="text-[10px] theme-subtext">FastAPI Port 8000 Sync</p>
           </div>
         </div>
       </div>
 
       {/* Judicial Bench & Courtroom Allocation Manager */}
-      <div className="bg-[#132240] border border-white/15 rounded-xl overflow-hidden shadow-xl">
-        <div className="p-4 border-b border-white/15 flex justify-between items-center bg-[#0F1B33]">
+      <div className="theme-card rounded overflow-hidden">
+        <div className="p-4 border-b border-subtle flex justify-between items-center theme-elevated">
           <div>
-            <h2 className="text-base font-serif font-bold text-white flex items-center gap-2">
-              <Building className="w-5 h-5 text-[#C9A24B]" />
+            <h2 className="text-base font-serif font-bold theme-heading flex items-center gap-2">
+              <Building className="w-5 h-5 text-amber-500" />
               Judicial Bench & Courtroom Allocation Manager
             </h2>
-            <p className="text-xs text-slate-300">Manage national courtroom allocations and judicial bench assignments</p>
+            <p className="text-xs theme-subtext">Manage national courtroom allocations and judicial bench assignments</p>
           </div>
 
           <button
             onClick={() => setShowAllocModal(true)}
-            className="px-3 py-1.5 bg-[#C9A24B] hover:bg-[#D9B35C] text-[#1B2C4F] text-xs font-bold rounded-lg flex items-center gap-1 cursor-pointer"
+            className="theme-primary-btn px-3 py-1.5 text-xs flex items-center gap-1 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Add Bench Allocation</span>
@@ -376,7 +380,7 @@ Verified for Supreme Court of India e-Committee Archival Compliance.`;
 
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left border-collapse">
-            <thead className="bg-[#0A1428] text-slate-300 font-serif uppercase tracking-wider border-b border-white/15">
+            <thead>
               <tr>
                 <th className="px-4 py-3">Courtroom</th>
                 <th className="px-4 py-3">Presiding Judge</th>
@@ -385,15 +389,15 @@ Verified for Supreme Court of India e-Committee Archival Compliance.`;
                 <th className="px-4 py-3">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/10">
+            <tbody>
               {courtrooms.map((c) => (
-                <tr key={c.id} className="hover:bg-white/5 transition-colors">
-                  <td className="px-4 py-3 font-bold text-[#C9A24B] whitespace-nowrap">{c.room}</td>
-                  <td className="px-4 py-3 font-semibold text-white">{c.judge}</td>
-                  <td className="px-4 py-3 text-slate-300">{c.division}</td>
-                  <td className="px-4 py-3 font-mono font-bold text-emerald-400">{c.activeCases} Cases</td>
+                <tr key={c.id}>
+                  <td className="px-4 py-3 font-bold text-blue-500 whitespace-nowrap">{c.room}</td>
+                  <td className="px-4 py-3 font-semibold theme-heading">{c.judge}</td>
+                  <td className="px-4 py-3 theme-subtext">{c.division}</td>
+                  <td className="px-4 py-3 font-mono font-bold text-emerald-600 dark:text-emerald-400">{c.activeCases} Cases</td>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <span className="px-2.5 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold rounded">
+                    <span className="badge-supported px-2.5 py-1 text-[10px] font-bold rounded">
                       {c.status}
                     </span>
                   </td>
@@ -406,55 +410,55 @@ Verified for Supreme Court of India e-Committee Archival Compliance.`;
 
       {/* Bench Allocation Modal */}
       {showAllocModal && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#132240] border border-white/20 rounded-2xl w-full max-w-md text-white shadow-2xl overflow-hidden">
-            <div className="p-4 border-b border-white/15 bg-[#0F1B33] flex justify-between items-center">
-              <h2 className="text-base font-serif font-bold text-white flex items-center gap-2">
-                <Building className="w-5 h-5 text-[#C9A24B]" />
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="theme-card rounded-lg w-full max-w-md shadow-2xl overflow-hidden border border-subtle">
+            <div className="p-4 border-b border-subtle theme-elevated flex justify-between items-center">
+              <h2 className="text-base font-serif font-bold theme-heading flex items-center gap-2">
+                <Building className="w-5 h-5 text-amber-500" />
                 Add Judicial Bench Allocation
               </h2>
-              <button onClick={() => setShowAllocModal(false)} className="text-slate-400 hover:text-white">
+              <button onClick={() => setShowAllocModal(false)} className="theme-subtext hover:theme-heading">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <form onSubmit={handleAddBenchAllocation} className="p-5 space-y-3 text-xs">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Courtroom Number / Hall:</label>
+                <label className="block text-xs font-semibold theme-subtext mb-1">Courtroom Number / Hall:</label>
                 <input
                   type="text"
                   required
                   value={editRoom}
                   onChange={(e) => setEditRoom(e.target.value)}
-                  className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white"
+                  className="w-full px-3 py-2 text-xs rounded"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Presiding Judicial Officer:</label>
+                <label className="block text-xs font-semibold theme-subtext mb-1">Presiding Judicial Officer:</label>
                 <input
                   type="text"
                   required
                   value={editJudge}
                   onChange={(e) => setEditJudge(e.target.value)}
-                  className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white"
+                  className="w-full px-3 py-2 text-xs rounded"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Special Bench Division:</label>
+                <label className="block text-xs font-semibold theme-subtext mb-1">Special Bench Division:</label>
                 <input
                   type="text"
                   required
                   value={editDivision}
                   onChange={(e) => setEditDivision(e.target.value)}
-                  className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white"
+                  className="w-full px-3 py-2 text-xs rounded"
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full py-3 bg-[#C9A24B] hover:bg-[#D9B35C] text-[#1B2C4F] font-bold rounded-xl shadow-lg mt-2 cursor-pointer"
+                className="theme-primary-btn w-full py-3 text-xs mt-2 cursor-pointer"
               >
                 Create Bench Allocation
               </button>

@@ -1,66 +1,125 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { useAnimations } from '@/hooks/useAnimations';
 import { StatusBadge } from '@/components/shared/StatusBadge';
-import { lawyerDashboardStats, lawyerCases, todaysHearings } from '@/data/mockData';
-import { Briefcase, Clock, CheckCircle, Calendar, FileText, Search, FolderOpen, ArrowRight } from 'lucide-react';
+import { api } from '@/services/api';
+import { Briefcase, Clock, Calendar, FileText, Search, FolderOpen, ArrowRight, AlertTriangle, RefreshCw, Filter } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
 export const LawyerDashboard: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { containerVariants, itemVariants } = useAnimations();
+
+  const [cases, setCases] = useState<any[]>([]);
+  const [hearings, setHearings] = useState<any[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Search & Filter State
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('All');
+
+  const fetchLawyerData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const params: any = {};
+      if (statusFilter !== 'All') params.status = statusFilter;
+      if (searchQuery.trim()) params.search = searchQuery.trim();
+
+      const fetchedCases = await api.getCases(params);
+      setCases(Array.isArray(fetchedCases) ? fetchedCases : []);
+
+      const fetchedHearings = await api.getHearings().catch(() => []);
+      setHearings(Array.isArray(fetchedHearings) ? fetchedHearings : []);
+    } catch (err: any) {
+      console.error('Lawyer dashboard fetch error:', err);
+      setError(err.message || 'Failed to retrieve active client cases from backend.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLawyerData();
+  }, [statusFilter]);
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    fetchLawyerData();
+  };
+
+  // Dynamic Statistics Calculations from Database Results
+  const totalCasesCount = cases.length;
+  const pendingCasesCount = cases.filter(c => c.status === 'Pending' || c.status === 'Active').length;
+  const closedCasesCount = cases.filter(c => c.status === 'Closed' || c.status === 'Disposed').length;
+  const activeHearingsCount = hearings.length;
 
   return (
-    <div className="space-y-6 text-white">
+    <div className="space-y-6 animate-fadeIn">
       {/* Header */}
-      <div className="border-b border-white/15 pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="border-b border-subtle pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-white flex items-center gap-2">
-            <Briefcase className="w-6 h-6 text-[#C9A24B]" />
+          <h1 className="text-2xl sm:text-3xl font-serif font-bold theme-heading flex items-center gap-2">
+            <Briefcase className="w-6 h-6 text-amber-500" />
             Advocate & Legal Counsel Portal
           </h1>
-          <p className="text-slate-300 text-xs sm:text-sm mt-1">
-            Welcome back, {user?.name || 'Adv. Vikramaditya Sen'} | High Court Bar Association
+          <p className="theme-subtext text-xs sm:text-sm mt-1">
+            Welcome back, <span className="font-bold theme-heading">{user?.name || 'Authorized Legal Counsel'}</span> | High Court Bar Association
           </p>
         </div>
 
         <div className="flex gap-2">
           <Link
             to="/ai/drafts"
-            className="px-4 py-2.5 bg-[#C9A24B] hover:bg-[#D9B35C] text-[#1B2C4F] font-bold text-xs rounded-xl shadow-lg flex items-center gap-1.5 cursor-pointer"
+            className="theme-primary-btn px-4 py-2.5 font-bold text-xs rounded shadow-sm flex items-center gap-1.5 cursor-pointer"
           >
-            <FileText className="w-4 h-4 text-[#1B2C4F]" />
+            <FileText className="w-4 h-4" />
             <span>Draft Pleading Motion</span>
           </Link>
         </div>
       </div>
 
-      {/* Stats Cards */}
+      {/* Error Alert */}
+      {error && (
+        <div className="p-4 theme-elevated border border-subtle text-red-600 dark:text-red-400 text-xs rounded flex items-center justify-between shadow-sm">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />
+            <span className="font-semibold">{error}</span>
+          </div>
+          <button
+            onClick={fetchLawyerData}
+            className="theme-primary-btn px-3 py-1 text-xs flex items-center gap-1 cursor-pointer"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Retry</span>
+          </button>
+        </div>
+      )}
+
+      {/* Dynamic Statistics Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-[#132240] border border-white/15 p-5 rounded-xl space-y-1 shadow-xl">
-          <p className="text-[10px] text-slate-400 font-bold uppercase">Total Active Briefs</p>
-          <h2 className="text-2xl font-bold font-mono text-[#C9A24B]">{lawyerDashboardStats.totalCases} Cases</h2>
-          <p className="text-[11px] text-emerald-400">↑ 12 New Active Filings</p>
+        <div className="theme-card p-5 rounded space-y-1">
+          <p className="text-[10px] theme-subtext font-bold uppercase tracking-wider">Total Assigned Briefs</p>
+          <h2 className="text-2xl font-bold font-mono text-blue-500">{totalCasesCount} Cases</h2>
+          <p className="text-[11px] theme-subtext">Live Database Records</p>
         </div>
 
-        <div className="bg-[#132240] border border-white/15 p-5 rounded-xl space-y-1 shadow-xl">
-          <p className="text-[10px] text-slate-400 font-bold uppercase">Pending Arguments</p>
-          <h2 className="text-2xl font-bold font-mono text-amber-400">{lawyerDashboardStats.pendingCases} Matters</h2>
-          <p className="text-[11px] text-slate-300">Awaiting Counter Affidavit</p>
+        <div className="theme-card p-5 rounded space-y-1">
+          <p className="text-[10px] theme-subtext font-bold uppercase tracking-wider">Active / Pending Matters</p>
+          <h2 className="text-2xl font-bold font-mono text-amber-500">{pendingCasesCount} Matters</h2>
+          <p className="text-[11px] theme-subtext">Awaiting Hearing / Counter Affidavit</p>
         </div>
 
-        <div className="bg-[#132240] border border-white/15 p-5 rounded-xl space-y-1 shadow-xl">
-          <p className="text-[10px] text-slate-400 font-bold uppercase">Disposed Decrees</p>
-          <h2 className="text-2xl font-bold font-mono text-emerald-400">{lawyerDashboardStats.closedCases} Decrees</h2>
-          <p className="text-[11px] text-emerald-400">✓ Successful Relief Granted</p>
+        <div className="theme-card p-5 rounded space-y-1">
+          <p className="text-[10px] theme-subtext font-bold uppercase tracking-wider">Disposed Decrees</p>
+          <h2 className="text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400">{closedCasesCount} Decrees</h2>
+          <p className="text-[11px] theme-subtext">✓ Resolved / Closed Filings</p>
         </div>
 
-        <div className="bg-[#132240] border border-white/15 p-5 rounded-xl space-y-1 shadow-xl">
-          <p className="text-[10px] text-slate-400 font-bold uppercase">Active Cause List Hearings</p>
-          <h2 className="text-2xl font-bold font-mono text-cyan-400">{lawyerDashboardStats.activeHearings} Hearings</h2>
-          <p className="text-[11px] text-slate-300">Scheduled for this Week</p>
+        <div className="theme-card p-5 rounded space-y-1">
+          <p className="text-[10px] theme-subtext font-bold uppercase tracking-wider">Cause List Hearings</p>
+          <h2 className="text-2xl font-bold font-mono text-cyan-600 dark:text-cyan-400">{activeHearingsCount} Hearings</h2>
+          <p className="text-[11px] theme-subtext">Scheduled Calendar Entries</p>
         </div>
       </div>
 
@@ -68,40 +127,40 @@ export const LawyerDashboard: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <button
           onClick={() => navigate('/ai/drafts')}
-          className="p-5 bg-[#132240] hover:bg-[#132240]/90 border border-white/15 hover:border-[#C9A24B] rounded-xl flex items-center gap-3 transition-all cursor-pointer shadow-lg group"
+          className="p-5 theme-card hover:bg-slate-100 dark:hover:bg-slate-800 rounded flex items-center gap-3 transition-all cursor-pointer group"
         >
-          <div className="p-3 bg-[#C9A24B]/15 text-[#C9A24B] rounded-xl group-hover:scale-110 transition-transform">
+          <div className="p-3 theme-elevated text-blue-500 rounded group-hover:scale-105 transition-transform">
             <FileText className="w-6 h-6" />
           </div>
           <div className="text-left">
-            <h3 className="font-serif font-bold text-white text-xs">File Pleading Motion</h3>
-            <p className="text-[10px] text-slate-300">AI Draft Generator & Petitions</p>
+            <h3 className="font-serif font-bold theme-heading text-xs">File Pleading Motion</h3>
+            <p className="text-[10px] theme-subtext">AI Draft Generator & Petitions</p>
           </div>
         </button>
 
         <button
           onClick={() => navigate('/ai/research')}
-          className="p-5 bg-[#132240] hover:bg-[#132240]/90 border border-white/15 hover:border-[#C9A24B] rounded-xl flex items-center gap-3 transition-all cursor-pointer shadow-lg group"
+          className="p-5 theme-card hover:bg-slate-100 dark:hover:bg-slate-800 rounded flex items-center gap-3 transition-all cursor-pointer group"
         >
-          <div className="p-3 bg-[#C9A24B]/15 text-[#C9A24B] rounded-xl group-hover:scale-110 transition-transform">
+          <div className="p-3 theme-elevated text-blue-500 rounded group-hover:scale-105 transition-transform">
             <Search className="w-6 h-6" />
           </div>
           <div className="text-left">
-            <h3 className="font-serif font-bold text-white text-xs">Case Law Research</h3>
-            <p className="text-[10px] text-slate-300">Precedent Vector Search Engine</p>
+            <h3 className="font-serif font-bold theme-heading text-xs">Case Law Research</h3>
+            <p className="text-[10px] theme-subtext">Precedent Vector Search Engine</p>
           </div>
         </button>
 
         <button
-          onClick={() => navigate('/lawyer/cases')}
-          className="p-5 bg-[#132240] hover:bg-[#132240]/90 border border-white/15 hover:border-[#C9A24B] rounded-xl flex items-center gap-3 transition-all cursor-pointer shadow-lg group"
+          onClick={() => navigate('/workspace')}
+          className="p-5 theme-card hover:bg-slate-100 dark:hover:bg-slate-800 rounded flex items-center gap-3 transition-all cursor-pointer group"
         >
-          <div className="p-3 bg-[#C9A24B]/15 text-[#C9A24B] rounded-xl group-hover:scale-110 transition-transform">
+          <div className="p-3 theme-elevated text-blue-500 rounded group-hover:scale-105 transition-transform">
             <FolderOpen className="w-6 h-6" />
           </div>
           <div className="text-left">
-            <h3 className="font-serif font-bold text-white text-xs">My Client Briefs</h3>
-            <p className="text-[10px] text-slate-300">Vault & Case Documents</p>
+            <h3 className="font-serif font-bold theme-heading text-xs">Unified Case Workspace</h3>
+            <p className="text-[10px] theme-subtext">Inspect Docket Briefs & Evidence</p>
           </div>
         </button>
       </div>
@@ -109,68 +168,120 @@ export const LawyerDashboard: React.FC = () => {
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Cases Table */}
-        <div className="lg:col-span-8 bg-[#132240] border border-white/15 rounded-xl overflow-hidden shadow-xl">
-          <div className="p-4 border-b border-white/15 bg-[#0F1B33] flex justify-between items-center">
-            <h2 className="text-base font-serif font-bold text-white">My Active Client Cases</h2>
-            <Link to="/lawyer/cases" className="text-xs font-bold text-[#C9A24B] hover:underline flex items-center gap-1">
-              View All Briefs <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
+        <div className="lg:col-span-8 theme-card rounded overflow-hidden space-y-3">
+          <div className="p-4 border-b border-subtle theme-elevated flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <div>
+              <h2 className="text-base font-serif font-bold theme-heading">My Authorized Client Briefs</h2>
+              <p className="text-[11px] theme-subtext">Server-authorized case records assigned to your legal counsel ID</p>
+            </div>
+
+            {/* Filter & Search Bar */}
+            <form onSubmit={handleSearchSubmit} className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+              <div className="relative flex-1 sm:flex-initial">
+                <Search className="w-3.5 h-3.5 theme-subtext absolute left-2.5 top-2.5" />
+                <input
+                  type="text"
+                  placeholder="Search case # or party..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-8 pr-3 py-1.5 text-xs rounded"
+                />
+              </div>
+
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="px-2.5 py-1.5 text-xs font-bold rounded cursor-pointer"
+              >
+                <option value="All">All Statuses</option>
+                <option value="Active">Active</option>
+                <option value="Pending">Pending</option>
+                <option value="Closed">Closed</option>
+              </select>
+            </form>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left border-collapse">
-              <thead className="bg-[#0A1428] text-slate-300 font-serif uppercase tracking-wider border-b border-white/15">
-                <tr>
-                  <th className="px-4 py-3">Case Number</th>
-                  <th className="px-4 py-3">Title</th>
-                  <th className="px-4 py-3">Client</th>
-                  <th className="px-4 py-3">Next Hearing</th>
-                  <th className="px-4 py-3">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/10">
-                {lawyerCases.map((c) => (
-                  <tr key={c.id} className="hover:bg-white/5 transition-colors">
-                    <td className="px-4 py-3 font-mono font-bold text-[#C9A24B] whitespace-nowrap">{c.caseNumber}</td>
-                    <td className="px-4 py-3 font-semibold text-white max-w-xs truncate">{c.title}</td>
-                    <td className="px-4 py-3 text-slate-300">{c.client}</td>
-                    <td className="px-4 py-3 font-mono text-amber-300 whitespace-nowrap">{c.nextHearing}</td>
-                    <td className="px-4 py-3 whitespace-nowrap"><StatusBadge status={c.status} /></td>
+            {loading ? (
+              <div className="p-8 text-center text-xs font-mono theme-subtext animate-pulse">
+                Fetching authorized case dockets from server...
+              </div>
+            ) : cases.length === 0 ? (
+              <div className="p-8 text-center space-y-2">
+                <FolderOpen className="w-8 h-8 theme-subtext mx-auto" />
+                <p className="text-xs font-bold theme-heading">No cases assigned yet.</p>
+                <p className="text-[11px] theme-subtext">Zero matching case records were returned by the backend server for your account.</p>
+              </div>
+            ) : (
+              <table className="w-full text-xs text-left border-collapse">
+                <thead>
+                  <tr>
+                    <th className="px-4 py-3">Case Number</th>
+                    <th className="px-4 py-3">Title / Parties</th>
+                    <th className="px-4 py-3">Petitioner</th>
+                    <th className="px-4 py-3">Next Hearing</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3">Action</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {cases.map((c) => (
+                    <tr key={c.id}>
+                      <td className="px-4 py-3 font-mono font-bold text-blue-500 whitespace-nowrap">{c.caseNumber}</td>
+                      <td className="px-4 py-3 font-semibold theme-heading max-w-xs truncate">{c.title}</td>
+                      <td className="px-4 py-3 theme-subtext max-w-xs truncate">{c.petitioner}</td>
+                      <td className="px-4 py-3 font-mono text-amber-500 whitespace-nowrap">{c.nextHearing || 'TBD'}</td>
+                      <td className="px-4 py-3 whitespace-nowrap"><StatusBadge status={c.status} /></td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <Link
+                          to={`/workspace/${c.id}`}
+                          className="theme-secondary-btn px-2.5 py-1 text-[10px] flex items-center gap-1"
+                        >
+                          Open Brief <ArrowRight className="w-3 h-3" />
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
 
         {/* Upcoming Hearings Sidebar Card */}
-        <div className="lg:col-span-4 bg-[#132240] border border-white/15 rounded-xl p-5 shadow-xl space-y-4">
-          <h2 className="text-base font-serif font-bold text-white flex items-center gap-2 border-b border-white/15 pb-3">
-            <Clock className="w-4 h-4 text-[#C9A24B]" />
+        <div className="lg:col-span-4 theme-card rounded p-5 space-y-4">
+          <h2 className="text-base font-serif font-bold theme-heading flex items-center gap-2 border-b border-subtle pb-3">
+            <Clock className="w-4 h-4 text-amber-500" />
             Upcoming Cause List Hearings
           </h2>
 
           <div className="space-y-3">
-            {todaysHearings.slice(0, 4).map((h) => (
-              <div key={h.id} className="p-3.5 bg-white/5 border border-white/15 rounded-xl space-y-1.5">
-                <div className="flex justify-between items-center">
-                  <span className="font-mono text-xs font-bold text-amber-400 flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-amber-400" />
-                    {h.time}
-                  </span>
-                  <StatusBadge status={h.status} />
-                </div>
-                <div className="text-xs font-mono font-bold text-[#C9A24B]">
-                  {h.caseNumber}
-                </div>
-                <div className="text-xs text-white truncate font-semibold">
-                  {h.title}
-                </div>
-                <div className="text-[11px] text-slate-400 font-mono">
-                  {h.courtRoom}
-                </div>
+            {hearings.length === 0 ? (
+              <div className="p-4 theme-elevated rounded text-xs theme-subtext text-center">
+                No upcoming scheduled hearings for your cases.
               </div>
-            ))}
+            ) : (
+              hearings.slice(0, 5).map((h, idx) => (
+                <div key={h.id || idx} className="p-3.5 theme-elevated rounded space-y-1.5">
+                  <div className="flex justify-between items-center">
+                    <span className="font-mono text-xs font-bold text-amber-500 flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-amber-500" />
+                      {h.date} at {h.time}
+                    </span>
+                    <StatusBadge status={h.status || 'Scheduled'} />
+                  </div>
+                  <div className="text-xs font-mono font-bold text-blue-500">
+                    {h.case?.caseNumber || h.caseNumber || 'Hearing Slot'}
+                  </div>
+                  <div className="text-xs theme-heading truncate font-semibold">
+                    {h.case?.title || h.title || 'Case Hearing'}
+                  </div>
+                  <div className="text-[11px] theme-subtext font-mono">
+                    {h.courtRoom || 'Court Room 1'}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>

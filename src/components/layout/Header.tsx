@@ -64,36 +64,46 @@ export function Header({ onMenuClick }: HeaderProps) {
   }, []);
 
   return (
-    <header className="sticky top-0 z-30 h-16 flex items-center justify-between px-4 sm:px-6 bg-[#0F1B33] border-b border-white/15 text-white shadow-lg backdrop-blur-md">
+    <header className="sticky top-0 z-30 h-14 flex items-center justify-between px-4 sm:px-6 theme-header shadow-xs">
       {/* Left: Mobile Toggle & Global Search */}
-      <div className="flex items-center gap-3 flex-1 max-w-lg">
+      <div className="flex items-center gap-3 flex-1 max-w-xl">
         <button
           onClick={onMenuClick}
-          className="p-2 rounded-lg hover:bg-white/10 text-white lg:hidden cursor-pointer"
+          className="p-1.5 rounded hover:opacity-80 lg:hidden cursor-pointer"
           title="Open Navigation"
         >
           <Menu className="w-5 h-5" />
         </button>
 
         <div className="relative w-full">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
           <input
             type="text"
-            placeholder="Search cases, judgments, statutes, or precedent citations..."
-            className="w-full pl-9 pr-4 py-2 bg-white/10 border border-white/20 rounded-lg text-xs text-white placeholder-slate-400 outline-none focus:border-[#C9A24B] transition-colors"
+            placeholder="Search case files, judgments, statutes, or precedent citations..."
+            className="w-full pl-9 pr-4 py-1.5 bg-surface border border-subtle rounded-sm text-xs outline-none transition-colors"
           />
         </div>
       </div>
 
       {/* Right Controls */}
-      <div className="flex items-center gap-3 ml-4">
+      <div className="flex items-center gap-2.5 ml-4">
         {/* Theme Toggle */}
         <button
           onClick={toggleTheme}
-          className="p-2 rounded-lg hover:bg-white/10 text-amber-300 transition-colors cursor-pointer"
-          title="Toggle Theme"
+          className="flex items-center gap-1.5 px-2 py-1 rounded border border-[#D9DEE4] dark:border-[#2B3742] bg-white dark:bg-[#151E27] text-xs font-mono font-medium hover:opacity-80 transition-colors cursor-pointer"
+          title="Toggle Light/Dark Theme"
         >
-          {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5 text-slate-200" />}
+          {theme === 'dark' ? (
+            <>
+              <Sun className="w-3.5 h-3.5 text-amber-400" />
+              <span>☀ Light</span>
+            </>
+          ) : (
+            <>
+              <Moon className="w-3.5 h-3.5 text-slate-700" />
+              <span>☾ Dark</span>
+            </>
+          )}
         </button>
 
         {/* Notifications */}
@@ -103,11 +113,11 @@ export function Header({ onMenuClick }: HeaderProps) {
               setShowNotifications(!showNotifications);
               setShowProfile(false);
             }}
-            className="p-2 rounded-lg hover:bg-white/10 text-slate-300 relative transition-colors cursor-pointer"
+            className="p-1.5 rounded hover:opacity-80 relative transition-colors cursor-pointer"
           >
-            <Bell className="w-5 h-5" />
+            <Bell className="w-4 h-4" />
             {unreadCount > 0 && (
-              <span className="absolute top-1 right-1 w-4 h-4 bg-rose-500 text-white text-[9px] font-extrabold rounded-full flex items-center justify-center animate-pulse">
+              <span className="absolute top-1 right-1 w-3.5 h-3.5 theme-primary-btn text-white text-[9px] font-bold rounded-full flex items-center justify-center">
                 {unreadCount}
               </span>
             )}
@@ -115,17 +125,17 @@ export function Header({ onMenuClick }: HeaderProps) {
 
           <AnimatePresence>
             {showNotifications && (
-              <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-[#132240] border border-white/20 rounded-xl shadow-2xl overflow-hidden z-50 text-white">
-                <div className="px-4 py-3 border-b border-white/15 bg-[#0F1B33] flex justify-between items-center">
-                  <h3 className="text-xs font-serif font-bold text-white flex items-center gap-1.5">
-                    <Bell className="w-3.5 h-3.5 text-[#C9A24B]" />
-                    Real-time Notifications ({unreadCount} unread)
+              <div className="absolute right-0 top-full mt-1.5 w-80 sm:w-96 theme-card shadow-md overflow-hidden z-50">
+                <div className="px-3.5 py-2.5 border-b border-subtle theme-elevated flex justify-between items-center">
+                  <h3 className="text-xs font-semibold flex items-center gap-1.5">
+                    <Bell className="w-3.5 h-3.5 text-[var(--primary-accent)]" />
+                    Notifications ({unreadCount} unread)
                   </h3>
                   <div className="flex gap-2">
                     {unreadCount > 0 && (
                       <button
                         onClick={markAllAsRead}
-                        className="text-[10px] text-[#C9A24B] hover:underline font-bold flex items-center gap-0.5 cursor-pointer"
+                        className="text-[10px] text-blue-600 dark:text-blue-400 hover:underline font-medium flex items-center gap-0.5 cursor-pointer"
                       >
                         <CheckCircle className="w-3 h-3" />
                         Mark all read
@@ -134,7 +144,7 @@ export function Header({ onMenuClick }: HeaderProps) {
                     {notificationsList.length > 0 && (
                       <button
                         onClick={clearAllNotifications}
-                        className="text-[10px] text-rose-400 hover:underline font-bold flex items-center gap-0.5 cursor-pointer"
+                        className="text-[10px] text-rose-600 dark:text-rose-400 hover:underline font-medium flex items-center gap-0.5 cursor-pointer"
                       >
                         <Trash2 className="w-3 h-3" />
                         Clear
@@ -143,28 +153,26 @@ export function Header({ onMenuClick }: HeaderProps) {
                   </div>
                 </div>
 
-                <div className="max-h-80 overflow-y-auto">
+                <div className="max-h-80 overflow-y-auto divide-y border-subtle">
                   {notificationsList.length > 0 ? (
                     notificationsList.map((notif) => (
                       <div
                         key={notif.id}
                         onClick={() => markSingleAsRead(notif.id)}
-                        className={`px-4 py-3 border-b border-white/10 hover:bg-white/5 text-xs space-y-1 cursor-pointer transition-colors ${
-                          !notif.read ? 'bg-amber-500/10' : ''
+                        className={`px-3.5 py-2.5 hover:opacity-90 text-xs space-y-0.5 cursor-pointer transition-colors ${
+                          !notif.read ? 'theme-elevated' : ''
                         }`}
                       >
                         <div className="flex items-center justify-between">
-                          <span className={`font-bold ${!notif.read ? 'text-[#C9A24B]' : 'text-slate-300'}`}>
-                            {notif.title}
-                          </span>
-                          <span className="text-[10px] text-slate-400 font-mono">{notif.time}</span>
+                          <span className="font-semibold">{notif.title}</span>
+                          <span className="text-[10px] font-mono opacity-60">{notif.time}</span>
                         </div>
-                        <p className="text-slate-300 text-[11px] leading-relaxed">{notif.message}</p>
+                        <p className="text-[11px] leading-snug theme-subtext">{notif.message}</p>
                       </div>
                     ))
                   ) : (
-                    <div className="p-6 text-center text-xs text-slate-400">
-                      No active notifications. You are all caught up!
+                    <div className="p-5 text-center text-xs theme-subtext">
+                      No active notifications.
                     </div>
                   )}
                 </div>
@@ -180,17 +188,17 @@ export function Header({ onMenuClick }: HeaderProps) {
               setShowProfile(!showProfile);
               setShowNotifications(false);
             }}
-            className="flex items-center gap-2 p-1 rounded-lg hover:bg-white/10 cursor-pointer"
+            className="flex items-center gap-2 p-1 rounded hover:opacity-80 cursor-pointer"
           >
-            <div className="w-8 h-8 rounded-full bg-[#C9A24B] text-[#1B2C4F] flex items-center justify-center text-xs font-extrabold shadow">
+            <div className="w-7 h-7 rounded-sm theme-primary-btn text-white flex items-center justify-center text-xs font-bold">
               {user?.name?.charAt(0) || 'U'}
             </div>
             {user && (
-              <div className="text-left hidden md:block">
-                <span className="text-xs font-bold text-white block leading-tight">
+              <div className="text-left hidden md:block leading-tight">
+                <span className="text-xs font-semibold block">
                   {user.name.split(' ').slice(-1)[0]}
                 </span>
-                <span className="text-[10px] text-[#C9A24B] font-semibold uppercase block leading-tight">
+                <span className="text-[10px] font-mono uppercase block font-semibold opacity-80">
                   {user.role}
                 </span>
               </div>
@@ -199,11 +207,11 @@ export function Header({ onMenuClick }: HeaderProps) {
 
           <AnimatePresence>
             {showProfile && (
-              <div className="absolute right-0 top-full mt-2 w-56 bg-[#132240] border border-white/20 rounded-xl shadow-2xl overflow-hidden z-50 text-white">
+              <div className="absolute right-0 top-full mt-1.5 w-56 theme-card shadow-md overflow-hidden z-50">
                 {user && (
-                  <div className="px-4 py-3 border-b border-white/15 bg-[#0F1B33]">
-                    <p className="text-xs font-bold text-white">{user.name}</p>
-                    <p className="text-[10px] text-slate-400">{user.designation}</p>
+                  <div className="px-3.5 py-2.5 border-b border-subtle theme-elevated">
+                    <p className="text-xs font-semibold">{user.name}</p>
+                    <p className="text-[10px] theme-subtext">{user.designation}</p>
                   </div>
                 )}
                 <div className="py-1 text-xs">
@@ -212,9 +220,9 @@ export function Header({ onMenuClick }: HeaderProps) {
                       logout();
                       navigate('/');
                     }}
-                    className="w-full flex items-center gap-2 px-4 py-2.5 text-rose-400 hover:bg-rose-500/20 font-semibold cursor-pointer"
+                    className="w-full flex items-center gap-2 px-3.5 py-2 text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 font-medium cursor-pointer"
                   >
-                    <LogOut className="w-4 h-4" />
+                    <LogOut className="w-3.5 h-3.5" />
                     Sign Out / Switch Role
                   </button>
                 </div>

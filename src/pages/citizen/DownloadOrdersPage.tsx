@@ -63,46 +63,46 @@ DATED THIS 10TH DAY OF MAY 2026.
   };
 
   return (
-    <div className="space-y-6 text-white">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="border-b border-white/15 pb-4">
-        <h1 className="text-2xl sm:text-3xl font-serif font-bold text-white flex items-center gap-2">
-          <Download className="w-6 h-6 text-[#C9A24B]" />
+      <div className="border-b border-subtle pb-4">
+        <h1 className="text-2xl sm:text-3xl font-serif font-bold theme-heading flex items-center gap-2">
+          <Download className="w-6 h-6 text-blue-600 dark:text-blue-400" />
           Download Certified Orders & Judgments
         </h1>
-        <p className="text-slate-300 text-xs sm:text-sm mt-1">
+        <p className="theme-subtext text-xs sm:text-sm mt-1">
           Search, View, and Download Digitally Signed Certified Copies of High Court & District Court Decrees
         </p>
       </div>
 
       {/* Orders List */}
-      <div className="bg-[#132240] border border-white/15 rounded-xl p-6 space-y-4 shadow-xl">
-        <h2 className="text-base font-serif font-bold text-white flex items-center gap-2">
-          <FileText className="w-5 h-5 text-[#C9A24B]" />
+      <div className="theme-card rounded-xl p-6 space-y-4 shadow-xl">
+        <h2 className="text-base font-serif font-bold theme-heading flex items-center gap-2">
+          <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
           Available Certified Orders for Verification & Download
         </h2>
 
         <div className="space-y-4">
           {orders.map((ord) => (
-            <div key={ord.id} className="p-4 bg-white/5 border border-white/15 rounded-xl space-y-3">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-white/10 pb-3">
+            <div key={ord.id} className="p-4 theme-elevated border border-subtle rounded-xl space-y-3">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-subtle pb-3">
                 <div>
-                  <span className="text-[10px] text-slate-400 font-bold uppercase">{ord.orderType}</span>
-                  <h3 className="text-base font-serif font-bold text-[#C9A24B]">{ord.caseNo} — {ord.title}</h3>
-                  <p className="text-xs text-slate-300">Presiding Officer: {ord.judge} | Order Date: {ord.date}</p>
+                  <span className="text-[10px] theme-subtext font-bold uppercase">{ord.orderType}</span>
+                  <h3 className="text-base font-serif font-bold text-blue-600 dark:text-blue-400">{ord.caseNo} — {ord.title}</h3>
+                  <p className="text-xs theme-subtext">Presiding Officer: {ord.judge} | Order Date: {ord.date}</p>
                 </div>
 
                 <button
                   onClick={() => handleDownload(ord)}
-                  className="px-4 py-2 bg-[#C9A24B] hover:bg-[#D9B35C] text-[#1B2C4F] font-bold text-xs rounded-xl shadow flex items-center gap-1.5 cursor-pointer shrink-0"
+                  className="theme-primary-btn px-4 py-2 text-xs font-bold rounded-xl shadow flex items-center gap-1.5 cursor-pointer shrink-0"
                 >
-                  <Download className="w-4 h-4 text-[#1B2C4F]" />
+                  <Download className="w-4 h-4" />
                   <span>Download Certified Order ({ord.fileSize})</span>
                 </button>
               </div>
 
               {/* Document Preview Box */}
-              <div className="p-3 bg-[#0F1B33] border border-white/10 rounded-lg text-xs font-mono text-slate-200 leading-relaxed max-h-36 overflow-y-auto">
+              <div className="p-3 theme-card border border-subtle rounded-lg text-xs font-mono theme-heading leading-relaxed max-h-36 overflow-y-auto">
                 <pre className="whitespace-pre-wrap font-mono">{ord.content}</pre>
               </div>
             </div>

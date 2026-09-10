@@ -1,0 +1,15 @@
+BHARATIYA SAKSHYA ADHINIYAM, 2023 (BSA) — ACT NO. 47 OF 2023
+Source: Gazette of India / Legislative Department, Ministry of Law and Justice
+Authority Level: 1 (Primary Law of Evidence)
+Jurisdiction: Republic of India
+Status: IN_FORCE
+Effective Date: 2024-07-01
+
+CHAPTER V — DOCUMENTARY EVIDENCE
+
+Section 61: Admissibility of electronic records.
+Nothing in this Adhiniyam shall apply to invalidate any information contained in an electronic record which is printed on a paper, stored, recorded or copied in optical or magnetic media produced by a computer subject to Section 63.
+
+Section 63: Admissibility of electronic records in evidence.
+(1) Notwithstanding anything contained in this Adhiniyam, any information contained in an electronic record which is printed on a paper, stored, recorded or copied in optical or magnetic media produced by a computer shall be deemed to be also a document, if the conditions mentioned in this section are satisfied in relation to the information and computer in question and shall be admissible in any proceedings, without further proof or production of the original, as evidence of any contents of the original or of any fact stated therein of which direct evidence would be admissible.
+(4) In any proceeding where it is desired to give a statement in evidence by virtue of this section, a certificate doing any of the specified things shall be submitted accompanying the electronic record.

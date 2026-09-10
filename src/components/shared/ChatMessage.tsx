@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Bot, User } from 'lucide-react';
+import { Scale, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ChatMessageProps {
@@ -21,8 +21,8 @@ export function ChatMessage({ role, content, timestamp, isTyping }: ChatMessageP
       className={cn('flex gap-3', isAi ? 'justify-start' : 'justify-end')}
     >
       {isAi && (
-        <div className="flex-shrink-0 w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center mt-1">
-          <Bot className="w-4 h-4 text-amber-500" />
+        <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center mt-1 border border-amber-500/20">
+          <Scale className="w-4 h-4 text-amber-500" />
         </div>
       )}
       <div className={cn('max-w-[75%] space-y-1', !isAi && 'items-end')}>

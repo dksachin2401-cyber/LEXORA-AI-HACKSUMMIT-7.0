@@ -77,16 +77,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(() => mockUsers.judge);
 
   useEffect(() => {
-    const token = getAuthToken();
-    if (token) {
-      api.getCurrentUser()
-        .then((res) => {
-          if (res.user) setUser(res.user);
+    api.getCurrentUser()
+      .then((res) => {
+        if (res.user) setUser(res.user);
+      })
+      .catch(() => {
+        api.login({
+          email: mockUsers.judge.email,
+          password: 'lexora123',
+          role: 'judge',
         })
-        .catch(() => {
-          // Fallback to local mock user if server offline
-        });
-    }
+          .then((res) => {
+            if (res.user) setUser(res.user);
+          })
+          .catch(() => {
+            setUser(mockUsers.judge);
+          });
+      });
   }, []);
 
   const login = async (role: UserRole, email?: string, password?: string) => {
@@ -97,8 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         role,
       });
 
-      if (res.token) {
-        setAuthToken(res.token);
+      if (res.user) {
         setUser(res.user);
       } else {
         setUser(mockUsers[role] || mockUsers.judge);
@@ -110,7 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = () => {
-    removeAuthToken();
+    api.logout().catch(() => {});
     setUser(null);
   };
 

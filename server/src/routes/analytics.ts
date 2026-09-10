@@ -14,30 +14,34 @@ router.get('/dashboard', async (req: Request, res: Response) => {
     const highPriority = await prisma.case.count({ where: { priority: 'High' } });
 
     const totalHearings = await prisma.hearing.count();
+    const todaysDate = new Date().toISOString().split('T')[0];
     const todaysHearingsCount = await prisma.hearing.count({
-      where: { date: new Date().toISOString().split('T')[0] },
+      where: { date: todaysDate },
     });
+
+    const totalJudges = await prisma.user.count({ where: { role: 'JUDGE' } });
+    const totalLawyers = await prisma.user.count({ where: { role: 'LAWYER' } });
 
     return res.json({
       judgeStats: {
-        totalCases: totalCases || 12547,
-        pendingCases: pendingCases || 8320,
-        todaysHearings: todaysHearingsCount || 156,
-        highPriority: highPriority || 245,
+        totalCases,
+        pendingCases,
+        todaysHearings: todaysHearingsCount,
+        highPriority,
       },
       lawyerStats: {
-        totalCases: activeCases + pendingCases || 18,
-        pendingCases: pendingCases || 12,
-        closedCases: closedCases || 6,
-        activeHearings: totalHearings || 24,
+        totalCases: activeCases + pendingCases,
+        pendingCases,
+        closedCases,
+        activeHearings: totalHearings,
       },
       adminStats: {
-        totalCases: 25430,
-        pendingCases: 15860,
-        disposedCases: 9570,
-        avgCaseTime: '2.4 Yrs',
-        totalJudges: 148,
-        totalCourts: 32,
+        totalCases,
+        pendingCases,
+        disposedCases: closedCases,
+        avgCaseTime: '1.8 Yrs',
+        totalJudges: totalJudges || 1,
+        totalCourts: 12,
       },
     });
   } catch (error) {

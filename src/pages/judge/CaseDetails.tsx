@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Clock, FileText, Download, Bot, Calendar, Users, Briefcase, FileCode2 } from 'lucide-react';
+import { ArrowLeft, Clock, FileText, Download, Bot, Calendar, Users, Briefcase, FileCode2, Loader2 } from 'lucide-react';
 import { useAnimations } from '@/hooks/useAnimations';
-import { mockCases, caseTimelineEvents } from '@/data/mockData';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { api } from '@/services/api';
 
 type TabType = 'Overview' | 'Parties' | 'Timeline' | 'Documents' | 'Hearings/History' | 'AI Summary' | 'Notes';
 
@@ -15,22 +15,66 @@ export function CaseDetails() {
   const navigate = useNavigate();
   const { containerVariants, itemVariants } = useAnimations();
   const [activeTab, setActiveTab] = useState<TabType>('Overview');
+  const [caseData, setCaseData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  const caseData = mockCases.find(c => c.id === id) || mockCases[0];
+  useEffect(() => {
+    if (!id) return;
+    setLoading(true);
+    api.getCaseById(id)
+      .then((data) => setCaseData(data))
+      .catch((err) => console.error('Failed to fetch case detail:', err))
+      .finally(() => setLoading(false));
+  }, [id]);
 
   const tabs: TabType[] = ['Overview', 'Parties', 'Timeline', 'Documents', 'Hearings/History', 'AI Summary', 'Notes'];
 
-  // Dummy documents
-  const dummyDocs = [
-    { id: 1, name: 'FIR Copy.pdf', date: '2024-01-15', size: '2.4 MB', type: 'PDF' },
-    { id: 2, name: 'Charge Sheet.pdf', date: '2024-02-05', size: '14.1 MB', type: 'PDF' },
-    { id: 3, name: 'Evidence List.docx', date: '2024-03-18', size: '1.2 MB', type: 'DOCX' },
-    { id: 4, name: 'Court Order - Preliminary.pdf', date: '2024-04-22', size: '3.5 MB', type: 'PDF' }
-  ];
+  if (loading) {
+    return (
+      <div className="p-12 text-center text-xs theme-subtext flex items-center justify-center gap-2">
+        <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+        <span>Loading case record from database...</span>
+      </div>
+    );
+  }
 
   if (!caseData) {
-    return <div className="p-8 text-center text-slate-500">Case not found</div>;
+    return <div className="p-8 text-center text-slate-500">Case record not found in database</div>;
   }
+
+  const caseTimelineEvents = [
+    {
+      date: caseData.filingDate || '2026-01-10',
+      event: 'Initial Petition Filed',
+      type: 'filing',
+      description: `Case registered with High Court Registry by ${caseData.petitioner || 'Petitioner'}.`,
+    },
+    ...(caseData.hearings || []).map((h: any) => ({
+      date: h.date,
+      event: `Hearing: ${h.type || 'Court Session'}`,
+      type: 'hearing',
+      description: `Scheduled at ${h.time || '10:30 AM'} in ${h.courtRoom || 'Courtroom 1'}. Status: ${h.status}.`,
+    })),
+    ...(caseData.documents || []).map((d: any) => ({
+      date: d.uploadedAt ? new Date(d.uploadedAt).toISOString().split('T')[0] : '2026-02-01',
+      event: `Document Ingested: ${d.fileName}`,
+      type: 'document',
+      description: `Indexed for judicial semantic research (${d.status || 'INDEXED'}).`,
+    })),
+  ];
+
+  const docsList = (caseData.documents && caseData.documents.length > 0)
+    ? caseData.documents.map((d: any) => ({
+        id: d.id,
+        name: d.fileName || 'Pleading Document.pdf',
+        date: d.uploadedAt ? new Date(d.uploadedAt).toISOString().split('T')[0] : '2026-01-15',
+        size: `${((d.fileSize || 102400) / 1024).toFixed(1)} KB`,
+        type: 'PDF',
+      }))
+    : [
+        { id: '1', name: 'Petition & Affidavits.pdf', date: caseData.filingDate || '2026-01-15', size: '2.4 MB', type: 'PDF' },
+        { id: '2', name: 'Written Submissions.pdf', date: caseData.filingDate || '2026-02-05', size: '1.8 MB', type: 'PDF' }
+      ];
 
   return (
     <motion.div
@@ -74,15 +118,15 @@ export function CaseDetails() {
               onClick={() => setActiveTab(tab)}
               className={`pb-3 text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors relative cursor-pointer ${
                 activeTab === tab
-                  ? 'text-amber-500 dark:text-amber-400'
-                  : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+                  ? 'text-[var(--primary-accent)] font-bold'
+                  : 'theme-subtext hover:theme-heading'
               }`}
             >
               {tab}
               {activeTab === tab && (
                 <motion.div
                   layoutId="activeTab"
-                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-500 dark:bg-amber-400"
+                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--primary-accent)]"
                 />
               )}
             </button>
@@ -227,7 +271,7 @@ export function CaseDetails() {
             </CardHeader>
             <CardContent className="pt-4">
               <div className="space-y-3">
-                {dummyDocs.map((doc) => (
+                {docsList.map((doc: any) => (
                   <div key={doc.id} className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50/80 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 hover:border-amber-500/40 transition-colors">
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-amber-500/10 rounded-lg text-amber-500">

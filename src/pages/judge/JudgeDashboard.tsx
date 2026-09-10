@@ -1,161 +1,316 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { Briefcase, Clock, Calendar, AlertTriangle, ChevronRight, FileText, Bot, FolderKanban, Plus } from 'lucide-react';
+import { Clock, Calendar, AlertTriangle, FileText, CheckCircle, XCircle, Scale, ChevronRight, Eye, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { StatusBadge } from '@/components/shared/StatusBadge';
+import { api } from '@/services/api';
 
 export const JudgeDashboard = () => {
   const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [cases, setCases] = useState<any[]>([]);
+  const [hearings, setHearings] = useState<any[]>([]);
+  const [activity, setActivity] = useState<any[]>([]);
+  const [analytics, setAnalytics] = useState<any>(null);
+  const [chromaOnline, setChromaOnline] = useState<boolean>(true);
 
-  const stats = [
-    { title: 'Total Cases Judged', value: '412', icon: Briefcase, color: 'text-[#C9A24B]', bg: 'bg-[#C9A24B]/10' },
-    { title: 'Pending Hearings', value: '28', icon: Clock, color: 'text-amber-400', bg: 'bg-amber-500/10' },
-    { title: 'Today\'s Docket', value: '6', icon: Calendar, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-    { title: 'High Priority Matters', value: '4', icon: AlertTriangle, color: 'text-rose-400', bg: 'bg-rose-500/10' },
-  ];
+  const fetchDashboardData = async () => {
+    setLoading(true);
+    try {
+      const [casesRes, hearingsRes, activityRes, analyticsRes, healthRes] = await Promise.allSettled([
+        api.getCases(),
+        api.getHearings(),
+        api.getAuditLogs(),
+        api.getAnalytics(),
+        api.getAiHealth(),
+      ]);
 
-  const recentCases = [
-    { id: '1', caseNumber: 'WP(C) 412/2024', title: 'State Bank of India vs. M/s Apex Enterprises', status: 'Active', priority: 'High', division: 'Commercial', nextHearing: '14-08-2026' },
-    { id: '2', caseNumber: 'CRL.A. 9912/2023', title: 'State of Maharashtra vs. Vikramaditya Deshmukh', status: 'Pending', priority: 'High', division: 'Criminal', nextHearing: '18-08-2026' },
-    { id: '3', caseNumber: 'CIV.SUIT 104/2025', title: 'Ramesh Patel vs. Municipal Corporation', status: 'Pending', priority: 'Medium', division: 'Civil', nextHearing: '22-08-2026' },
-  ];
+      if (casesRes.status === 'fulfilled') {
+        const rawCases = casesRes.value;
+        setCases(Array.isArray(rawCases) ? rawCases : rawCases?.data || []);
+      }
+
+      if (hearingsRes.status === 'fulfilled') {
+        const rawHearings = hearingsRes.value;
+        setHearings(Array.isArray(rawHearings) ? rawHearings : rawHearings?.data || []);
+      }
+
+      if (activityRes.status === 'fulfilled' && activityRes.value?.logs) {
+        setActivity(activityRes.value.logs);
+      }
+
+      if (analyticsRes.status === 'fulfilled') {
+        setAnalytics(analyticsRes.value);
+      }
+
+      if (healthRes.status === 'fulfilled') {
+        setChromaOnline(Boolean(healthRes.value?.ok));
+      }
+    } catch (err) {
+      console.error('Failed to load live judge dashboard data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  // Filter matters requiring judicial attention
+  const mattersRequiringAttention = cases.filter(
+    (c) => c.status === 'Pending' || c.priority === 'High'
+  ).length > 0
+    ? cases.filter((c) => c.status === 'Pending' || c.priority === 'High')
+    : cases.slice(0, 3);
+
+  const todayIso = new Date().toISOString().split('T')[0];
+  const todaysHearings = hearings.filter((h) => h.date === todayIso);
+
+  const todayFormatted = new Intl.DateTimeFormat('en-GB', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date());
+
+  const hearingsCount = String(
+    analytics?.judgeStats?.todaysHearings ?? todaysHearings.length
+  ).padStart(2, '0');
+
+  const pendingReviewsCount = String(
+    analytics?.judgeStats?.pendingCases ?? cases.filter((c) => c.status === 'Pending').length
+  ).padStart(2, '0');
+
+  const activeMattersCount = String(
+    analytics?.judgeStats?.totalCases ?? cases.length
+  ).padStart(2, '0');
 
   return (
-    <div className="space-y-6 text-white">
-      {/* Page Title */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/15 pb-4">
+    <div className="space-y-6">
+      {/* Editorial Header */}
+      <div className="border-b border-[#D9DEE4] dark:border-[#2B3742] pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-white">
-            Bench Dashboard
+          <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-[var(--primary-accent)]">
+            HIGH COURT OF JUDICATURE · BENCH II
+          </span>
+          <h1 className="text-2xl sm:text-3xl font-serif font-bold theme-heading tracking-tight mt-0.5">
+            Judge's Workspace
           </h1>
-          <p className="text-slate-300 text-xs sm:text-sm mt-1">
-            Presiding Officer: {user?.name || 'Hon\'ble Justice Rajesh Sharma'} | High Court Bench II
+          <p className="theme-subtext text-xs mt-1">
+            Presiding Officer: <strong className="theme-heading">{user?.name || "Hon'ble Presiding Officer"}</strong> | <span className="font-mono opacity-80">{todayFormatted}</span>
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          <Link to="/ai/analyzer" className="px-3.5 py-2 bg-[#C9A24B] hover:bg-[#D9B35C] text-[#1B2C4F] rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-md">
-            <FileText className="w-4 h-4 text-[#1B2C4F]" />
-            <span>Analyze Document</span>
-          </Link>
-          <Link to="/ai/evidence" className="px-3.5 py-2 border border-white/20 text-white hover:bg-white/10 rounded-lg text-xs font-semibold flex items-center gap-1.5">
-            <Plus className="w-4 h-4 text-[#C9A24B]" />
-            <span>Add Bench Note / Evidence</span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={fetchDashboardData}
+            title="Refresh Live Data"
+            className="p-1.5 theme-elevated border border-subtle rounded-sm text-xs theme-subtext hover:theme-heading cursor-pointer flex items-center gap-1"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+          <Link to="/ai/research" className="px-3.5 py-1.5 theme-primary-btn text-xs rounded-sm font-semibold flex items-center gap-1.5 cursor-pointer">
+            <Scale className="w-3.5 h-3.5" />
+            <span>Open Legal Research Workstation</span>
           </Link>
         </div>
       </div>
 
-      {/* Stats Cards Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((s, idx) => (
-          <div key={idx} className="bg-[#132240] border border-white/15 rounded-xl p-5 flex items-center justify-between shadow-xl">
-            <div>
-              <p className="text-[11px] text-slate-300 font-semibold uppercase tracking-wider">{s.title}</p>
-              <h3 className="text-2xl font-serif font-bold text-white mt-1">{s.value}</h3>
-            </div>
-            <div className={`w-10 h-10 rounded-lg ${s.bg} flex items-center justify-center shrink-0`}>
-              <s.icon className={`w-5 h-5 ${s.color}`} />
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Main Two Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left: AI Recommendation */}
-        <div className="lg:col-span-2 space-y-4">
-          <div className="bg-[#132240] border border-white/15 rounded-xl p-6 space-y-4 shadow-xl">
-            <div className="border-b border-white/10 pb-3">
-              <h2 className="text-lg font-serif font-bold text-white">
-                Prioritized Hearing Recommendation
-              </h2>
-              <p className="text-xs text-slate-300">Suggested by Lexora AI Workload Optimization Model</p>
-            </div>
-
-            <div className="space-y-3 bg-white/5 p-4 rounded-lg border border-white/10">
-              <div className="flex flex-wrap justify-between items-center gap-2">
-                <span className="font-bold text-amber-300 text-sm">WP(C) 412/2024 — Commercial Debt Recovery</span>
-                <StatusBadge status="High" />
-              </div>
-              <p className="text-xs text-slate-200 leading-relaxed">
-                <strong>AI Rationale:</strong> Commercial assets pledged under SARFAESI statutory notice require urgent interim stay consideration prior to financial quarter close. Precedent match indicates high risk of asset dissipation.
-              </p>
-              <div className="flex flex-wrap gap-2 pt-2 border-t border-white/10">
-                <Link to="/ai/drafts" className="px-3.5 py-1.5 bg-[#C9A24B] text-[#1B2C4F] font-bold text-xs rounded hover:bg-[#D9B35C]">
-                  Generate Draft Order
-                </Link>
-                <Link to="/ai/evidence" className="px-3.5 py-1.5 bg-white/15 text-white font-semibold text-xs rounded hover:bg-white/25 border border-white/20">
-                  ➕ Add Bench Evidence Note
-                </Link>
-              </div>
-            </div>
+      {/* Operational Summary Strip */}
+      <div className="theme-card p-4 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <span className="text-[10px] font-mono font-semibold uppercase tracking-wider block opacity-60">
+            TODAY'S OPERATIONAL SUMMARY
+          </span>
+          <div className="flex items-baseline gap-4 mt-1">
+            <span className="text-lg font-bold font-mono">{hearingsCount} <span className="text-xs font-sans font-normal theme-subtext">Hearings</span></span>
+            <span className="opacity-40">·</span>
+            <span className="text-lg font-bold text-[var(--primary-accent)] font-mono">{pendingReviewsCount} <span className="text-xs font-sans font-normal theme-subtext">Pending Reviews</span></span>
+            <span className="opacity-40">·</span>
+            <span className="text-lg font-bold font-mono">{activeMattersCount} <span className="text-xs font-sans font-normal theme-subtext">Active Matters</span></span>
           </div>
         </div>
 
-        {/* Right: Judicial Workbench Tools */}
-        <div className="lg:col-span-1">
-          <div className="bg-[#132240] border border-white/15 rounded-xl p-6 space-y-3 shadow-xl h-full flex flex-col justify-between">
-            <div>
-              <h3 className="text-base font-serif font-bold text-white mb-3">Judicial Workbench Tools</h3>
-              <div className="space-y-2.5">
-                <Link to="/ai/evidence" className="p-3 bg-[#C9A24B]/15 hover:bg-[#C9A24B]/25 rounded-lg border border-[#C9A24B]/40 flex items-center justify-between text-xs font-bold text-[#C9A24B] transition-colors">
-                  <span className="flex items-center gap-1.5">
-                    <Plus className="w-4 h-4 text-[#C9A24B]" />
-                    <span>Judicial Evidence & Notes Vault</span>
-                  </span>
-                  <ChevronRight className="w-4 h-4 text-[#C9A24B]" />
-                </Link>
-                <Link to="/ai/analyzer" className="p-3 bg-white/5 hover:bg-white/10 rounded-lg border border-white/10 flex items-center justify-between text-xs font-semibold text-white transition-colors">
-                  <span>AI Document & OCR Analyzer</span>
-                  <ChevronRight className="w-4 h-4 text-amber-400" />
-                </Link>
-                <Link to="/ai/similar-cases" className="p-3 bg-white/5 hover:bg-white/10 rounded-lg border border-white/10 flex items-center justify-between text-xs font-semibold text-white transition-colors">
-                  <span>Precedent Vector Search</span>
-                  <ChevronRight className="w-4 h-4 text-amber-400" />
-                </Link>
-                <Link to="/audit" className="p-3 bg-white/5 hover:bg-white/10 rounded-lg border border-white/10 flex items-center justify-between text-xs font-semibold text-white transition-colors">
-                  <span>System Audit Logs</span>
-                  <ChevronRight className="w-4 h-4 text-amber-400" />
-                </Link>
-              </div>
-            </div>
-          </div>
+        <div className="flex items-center gap-2 text-xs font-mono theme-subtext theme-elevated px-3 py-1.5 rounded-sm">
+          <span className={`w-2 h-2 rounded-full ${chromaOnline ? 'bg-emerald-600 dark:bg-emerald-400' : 'bg-rose-500'}`}></span>
+          <span>CHROMA VECTOR INDEX: {chromaOnline ? 'ONLINE' : 'OFFLINE'}</span>
         </div>
       </div>
 
-      {/* Active Cause List Table */}
-      <div className="bg-[#132240] border border-white/15 rounded-xl overflow-hidden shadow-xl">
-        <div className="p-4 border-b border-white/15 flex justify-between items-center bg-[#0F1B33]">
-          <h2 className="text-base font-serif font-bold text-white">Active Cause List</h2>
-          <Link to="/judge/cases" className="text-xs font-bold text-[#C9A24B] hover:underline flex items-center">
-            View All Cases <ChevronRight className="w-4 h-4 ml-0.5" />
-          </Link>
+      {/* Matters Requiring Attention Table */}
+      <div className="theme-card overflow-hidden space-y-0">
+        <div className="px-4 py-3 border-b border-subtle theme-elevated flex justify-between items-center">
+          <h2 className="text-sm font-serif font-bold theme-heading flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+            Matters Requiring Judicial Attention
+          </h2>
+          <span className="text-[10px] font-mono theme-subtext uppercase">
+            {mattersRequiringAttention.length} {mattersRequiringAttention.length === 1 ? 'MATTER' : 'MATTERS'} PENDING DECISION
+          </span>
         </div>
+
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left border-collapse">
-            <thead className="bg-[#0A1428] text-slate-300 font-serif uppercase tracking-wider border-b border-white/15">
+            <thead>
               <tr>
-                <th className="px-4 py-3">Case Number</th>
-                <th className="px-4 py-3">Parties</th>
+                <th className="px-4 py-3">Case Identifier</th>
+                <th className="px-4 py-3">Parties / Matter</th>
+                <th className="px-4 py-3">Next Required Action</th>
                 <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Division</th>
-                <th className="px-4 py-3">Priority</th>
-                <th className="px-4 py-3">Next Hearing</th>
+                <th className="px-4 py-3 text-right">Review Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/10">
-              {recentCases.map((c) => (
-                <tr key={c.id} className="hover:bg-white/5 transition-colors">
-                  <td className="px-4 py-3 font-bold text-[#C9A24B] whitespace-nowrap">{c.caseNumber}</td>
-                  <td className="px-4 py-3 text-slate-200">{c.title}</td>
-                  <td className="px-4 py-3 whitespace-nowrap"><StatusBadge status={c.status} /></td>
-                  <td className="px-4 py-3 text-slate-300 whitespace-nowrap">{c.division}</td>
-                  <td className="px-4 py-3 whitespace-nowrap"><StatusBadge status={c.priority} /></td>
-                  <td className="px-4 py-3 text-slate-300 whitespace-nowrap font-mono">{c.nextHearing}</td>
+            <tbody>
+              {mattersRequiringAttention.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-4 py-6 text-center theme-subtext">
+                    No urgent matters requiring judicial attention at this moment.
+                  </td>
                 </tr>
-              ))}
+              ) : (
+                mattersRequiringAttention.map((m, idx) => (
+                  <tr key={m.id || idx} className="hover:theme-elevated transition-colors">
+                    <td className="px-4 py-3 font-mono font-bold text-[var(--primary-accent)] whitespace-nowrap">
+                      {m.caseNumber}
+                    </td>
+                    <td className="px-4 py-3 font-medium theme-heading">
+                      {m.title || `${m.petitioner} v. ${m.respondent}`}
+                    </td>
+                    <td className="px-4 py-3 theme-subtext">
+                      {m.hearings?.[0]
+                        ? `${m.hearings[0].type || 'Hearing'} on ${m.hearings[0].date}`
+                        : m.description
+                        ? (m.description.slice(0, 70) + (m.description.length > 70 ? '...' : ''))
+                        : 'Review pleadings & interim relief'}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <span className="px-2 py-0.5 rounded-sm badge-pending text-[10px] font-mono font-semibold">
+                        {m.status?.toUpperCase() || 'REQUIRES REVIEW'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                      <Link
+                        to={`/judge/cases`}
+                        className="px-2.5 py-1 theme-primary-btn text-[11px] font-semibold rounded-sm inline-flex items-center gap-1"
+                      >
+                        <Eye className="w-3 h-3 text-white" />
+                        <span>Review File</span>
+                      </Link>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {/* Two Column Section: Upcoming Hearings & Recent Activity */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left 2 Cols: Upcoming Hearings */}
+        <div className="lg:col-span-2 theme-card overflow-hidden">
+          <div className="px-4 py-3 border-b border-subtle theme-elevated flex justify-between items-center">
+            <h2 className="text-sm font-serif font-bold theme-heading flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+              Today's Cause List (Upcoming Hearings)
+            </h2>
+            <Link to="/judge/cases" className="text-xs font-medium text-[var(--primary-accent)] hover:underline flex items-center gap-0.5">
+              Full Docket <ChevronRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr>
+                  <th className="px-4 py-2.5">Time</th>
+                  <th className="px-4 py-2.5">Case Number</th>
+                  <th className="px-4 py-2.5">Parties</th>
+                  <th className="px-4 py-2.5">Division</th>
+                  <th className="px-4 py-2.5">Stage</th>
+                </tr>
+              </thead>
+              <tbody>
+                {todaysHearings.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-6 text-center theme-subtext">
+                      No hearings scheduled on today's cause list ({todayFormatted}).
+                    </td>
+                  </tr>
+                ) : (
+                  todaysHearings.map((h, i) => (
+                    <tr key={h.id || i} className="hover:theme-elevated transition-colors">
+                      <td className="px-4 py-2.5 font-mono theme-subtext whitespace-nowrap">{h.time || '10:30 AM'}</td>
+                      <td className="px-4 py-2.5 font-mono font-semibold text-[var(--primary-accent)] whitespace-nowrap">
+                        {h.case?.caseNumber || 'CASE-REF'}
+                      </td>
+                      <td className="px-4 py-2.5 font-medium theme-heading">
+                        {h.case?.title || 'State vs. Accused'}
+                      </td>
+                      <td className="px-4 py-2.5 theme-subtext whitespace-nowrap">
+                        {h.courtRoom || h.case?.court || 'Bench II'}
+                      </td>
+                      <td className="px-4 py-2.5 theme-subtext whitespace-nowrap">
+                        <span className="px-2 py-0.5 rounded-sm bg-[#F5EBE6] dark:bg-[#2C241E] text-[10px] font-mono font-medium">
+                          {h.type || h.status || 'Hearing'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Right Col: Recent Activity Audit Stream */}
+        <div className="lg:col-span-1 theme-card p-4 space-y-4">
+          <div className="border-b border-subtle pb-2 flex items-center justify-between">
+            <h3 className="text-xs font-serif font-bold theme-heading uppercase tracking-wider">
+              Recent Case Activity
+            </h3>
+            <Link to="/audit" className="text-[10px] font-mono text-[var(--primary-accent)] hover:underline">
+              Audit Stream →
+            </Link>
+          </div>
+
+          <div className="space-y-3 text-xs">
+            {activity.length === 0 ? (
+              <div className="p-4 text-center theme-subtext text-xs">
+                No recent activity recorded in the judicial audit stream.
+              </div>
+            ) : (
+              activity.slice(0, 4).map((act, i) => {
+                let caseNum = 'SYSTEM';
+                try {
+                  const inputObj = typeof act.input === 'string' ? JSON.parse(act.input) : act.input;
+                  caseNum = inputObj?.caseNumber || inputObj?.caseId || act.actorRole || 'AUDIT';
+                } catch {
+                  caseNum = act.actorRole || 'AUDIT';
+                }
+
+                const timeStr = act.createdAt
+                  ? new Date(act.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                  : 'Just now';
+
+                return (
+                  <div key={act.id || i} className="p-2.5 theme-elevated rounded-sm space-y-1">
+                    <div className="flex items-center justify-between text-[10px] font-mono theme-subtext">
+                      <span className="font-semibold text-[var(--primary-accent)]">{caseNum}</span>
+                      <span>{timeStr}</span>
+                    </div>
+                    <p className="theme-heading leading-snug font-medium">
+                      {act.action?.replace(/_/g, ' ') || 'Action logged'}
+                    </p>
+                    <p className="text-[10px] theme-subtext font-mono">
+                      Actor: {act.actor?.name || act.actorRole || 'System Officer'}
+                    </p>
+                  </div>
+                );
+              })
+            )}
+          </div>
         </div>
       </div>
     </div>
