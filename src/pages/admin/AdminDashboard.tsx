@@ -1,36 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Briefcase, Clock, CheckCircle, Timer, Users, Building, ShieldCheck, UserCheck, XCircle, AlertTriangle, Lock, ShieldAlert, Cpu, Database, Activity, Download, RefreshCw, FileSpreadsheet, Edit3, Plus, X, BarChart3, Globe } from 'lucide-react';
+import { Briefcase, Clock, CheckCircle, Timer, Users, Building, ShieldCheck, UserCheck, XCircle, AlertTriangle, Lock, ShieldAlert, Cpu, Database, Activity, Download, RefreshCw, FileSpreadsheet, Edit3, Plus, X, BarChart3, Globe, Eye, EyeOff, FileText, AlertCircle, Mail, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/services/api';
 
 export const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
-  const [pendingUsers, setPendingUsers] = useState<any[]>([
-    {
-      id: 'pending_1',
-      name: 'Adv. Vikramaditya Sen',
-      email: 'vikram.sen@lawfirm.in',
-      role: 'LAWYER',
-      designation: 'Senior High Court Advocate',
-      court: 'High Court of Judicature',
-      officialId: 'BAR/MH/2024/8891',
-      createdAt: '2026-08-07'
-    },
-    {
-      id: 'pending_2',
-      name: 'Hon\'ble Justice Meenakshi Sundaram',
-      email: 'm.sundaram@judiciary.gov.in',
-      role: 'JUDGE',
-      designation: 'District & Sessions Judge',
-      court: 'District Civil & Criminal Court',
-      officialId: 'JUD/SERVICE/1042',
-      createdAt: '2026-08-07'
-    }
-  ]);
+  const [pendingUsers, setPendingUsers] = useState<any[]>([]);
+  const [loadingPending, setLoadingPending] = useState<boolean>(false);
+
+  // Verification Modal State
+  const [selectedApplicant, setSelectedApplicant] = useState<any | null>(null);
+  const [showVerifyModal, setShowVerifyModal] = useState<boolean>(false);
+  const [showOfficialId, setShowOfficialId] = useState<boolean>(false);
+  const [isRejecting, setIsRejecting] = useState<boolean>(false);
+  const [rejectionReason, setRejectionReason] = useState<string>('');
+  const [processingAction, setProcessingAction] = useState<boolean>(false);
 
   const [actionMsg, setActionMsg] = useState<string>('');
+  const [actionError, setActionError] = useState<string>('');
   const [lockdownActive, setLockdownActive] = useState<boolean>(false);
   const [isReindexing, setIsReindexing] = useState<boolean>(false);
   const [showAllocModal, setShowAllocModal] = useState<boolean>(false);
@@ -43,6 +32,7 @@ export const AdminDashboard: React.FC = () => {
   const [editDivision, setEditDivision] = useState('Arbitration & Contractual Disputes');
 
   const fetchAdminData = async () => {
+    setLoadingPending(true);
     try {
       const [pendingRes, allocRes] = await Promise.allSettled([
         api.getPendingUsers(),
@@ -67,6 +57,8 @@ export const AdminDashboard: React.FC = () => {
       }
     } catch {
       // Fallback handled gracefully
+    } finally {
+      setLoadingPending(false);
     }
   };
 
@@ -74,14 +66,49 @@ export const AdminDashboard: React.FC = () => {
     fetchAdminData();
   }, []);
 
-  const handleApprove = async (userId: string, status: 'APPROVED' | 'REJECTED') => {
+  const openVerificationModal = async (applicant: any) => {
     try {
-      await api.approveUser(userId, status);
-      setActionMsg(`Account status updated to ${status} for User ID ${userId}`);
-      setPendingUsers((prev) => prev.filter((u) => u.id !== userId));
+      setProcessingAction(true);
+      const res = await api.getApplicantDetails(applicant.id);
+      if (res.success && res.applicant) {
+        setSelectedApplicant(res.applicant);
+      } else {
+        setSelectedApplicant(applicant);
+      }
     } catch {
-      setActionMsg(`Updated status to ${status}`);
-      setPendingUsers((prev) => prev.filter((u) => u.id !== userId));
+      setSelectedApplicant(applicant);
+    } finally {
+      setProcessingAction(false);
+      setShowOfficialId(false);
+      setIsRejecting(false);
+      setRejectionReason('');
+      setShowVerifyModal(true);
+    }
+  };
+
+  const handleApprove = async (userId: string, status: 'APPROVED' | 'REJECTED', reason?: string) => {
+    setProcessingAction(true);
+    setActionError('');
+    try {
+      const res = await api.approveUser(userId, status, reason);
+      if (res.success) {
+        setActionMsg(
+          status === 'APPROVED'
+            ? `✓ Account approved & activated for ${res.user?.name || userId}. Role permissions granted.`
+            : `✓ Registration rejected for ${res.user?.name || userId}. Notification recorded.`
+        );
+        setPendingUsers((prev) => prev.filter((u) => u.id !== userId));
+        setShowVerifyModal(false);
+        setSelectedApplicant(null);
+      }
+    } catch (err: any) {
+      setActionError(err.message || `Failed to update user status to ${status}`);
+    } finally {
+      setProcessingAction(false);
+      setTimeout(() => {
+        setActionMsg('');
+        setActionError('');
+      }, 6000);
     }
   };
 
@@ -240,55 +267,99 @@ Verified for Supreme Court of India e-Committee Archival Compliance.`;
 
       {/* Official Registration Approval Queue */}
       <div className="theme-card rounded p-6 space-y-4">
-        <div className="flex justify-between items-center border-b border-subtle pb-3">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-subtle pb-3">
           <div>
             <h2 className="text-base font-serif font-bold theme-heading flex items-center gap-2">
               <UserCheck className="w-5 h-5 text-amber-500" />
               Pending Official Registration Verification Queue ({pendingUsers.length})
             </h2>
-            <p className="text-xs theme-subtext">Review Bar IDs, Judicial Service Numbers, and authorize official access</p>
+            <p className="text-xs theme-subtext">Review Bar IDs, Judicial Service Numbers, and authorize official access via full verification dossiers</p>
           </div>
-          <span className="badge-pending px-2.5 py-1 text-xs font-bold rounded">
-            Security Gate Active
-          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={fetchAdminData}
+              disabled={loadingPending}
+              className="theme-secondary-btn px-2.5 py-1 text-xs flex items-center gap-1 cursor-pointer"
+              title="Refresh queue"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loadingPending ? 'animate-spin' : ''}`} />
+              <span>Refresh</span>
+            </button>
+            <span className="badge-pending px-2.5 py-1 text-xs font-bold rounded">
+              Security Gate Active
+            </span>
+          </div>
         </div>
 
-        {pendingUsers.length === 0 ? (
+        {loadingPending ? (
+          <div className="p-8 theme-elevated border border-subtle rounded text-center text-xs theme-subtext flex items-center justify-center gap-2">
+            <RefreshCw className="w-4 h-4 animate-spin text-amber-500" />
+            <span>Loading applicant verification queue...</span>
+          </div>
+        ) : pendingUsers.length === 0 ? (
           <div className="p-6 theme-elevated border border-subtle rounded text-center text-xs theme-subtext">
             ✓ No pending official registration requests. All applicant credentials are verified.
           </div>
         ) : (
           <div className="space-y-3">
             {pendingUsers.map((u) => (
-              <div key={u.id} className="p-4 theme-elevated border border-subtle rounded flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold theme-heading text-sm">{u.name}</span>
+              <div
+                key={u.id}
+                className="p-4 theme-elevated border border-subtle rounded-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:border-amber-500/40 transition-colors"
+              >
+                <div className="space-y-1.5 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-bold theme-heading text-sm font-serif">{u.name}</span>
                     <span className="badge-pending px-2 py-0.5 text-[10px] font-bold rounded uppercase">
                       {u.role}
                     </span>
+                    {u.createdAt && (
+                      <span className="text-[10px] theme-subtext flex items-center gap-1">
+                        <Clock className="w-3 h-3 text-amber-500" />
+                        Submitted: {new Date(u.createdAt).toLocaleDateString()}
+                      </span>
+                    )}
                   </div>
-                  <p className="text-xs theme-subtext">
-                    <strong>Email:</strong> {u.email} | <strong>Bar/Judicial ID:</strong> <span className="text-blue-500 font-mono font-bold">{u.officialId || 'N/A'}</span>
-                  </p>
-                  <p className="text-xs theme-subtext">
-                    <strong>Court:</strong> {u.court} | <strong>Designation:</strong> {u.designation}
-                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-xs theme-subtext">
+                    <p><strong>Official Email:</strong> {u.email}</p>
+                    <p>
+                      <strong>Bar/Judicial ID:</strong>{' '}
+                      <span className="text-blue-500 font-mono font-bold">
+                        {u.officialIdMasked || u.officialId || 'N/A'}
+                      </span>
+                    </p>
+                    <p><strong>Court:</strong> {u.court}</p>
+                    <p><strong>Designation:</strong> {u.designation}</p>
+                  </div>
                 </div>
 
-                <div className="flex gap-2 shrink-0">
+                <div className="flex flex-wrap gap-2 shrink-0 w-full md:w-auto justify-end">
                   <button
-                    onClick={() => handleApprove(u.id, 'APPROVED')}
-                    className="theme-primary-btn px-4 py-2 text-xs flex items-center gap-1 cursor-pointer"
+                    onClick={() => openVerificationModal(u)}
+                    className="theme-secondary-btn px-3 py-2 text-xs flex items-center gap-1.5 cursor-pointer font-bold"
                   >
-                    <CheckCircle className="w-4 h-4" />
-                    Approve & Grant Access
+                    <FileText className="w-3.5 h-3.5 text-amber-500" />
+                    Review & Verify
                   </button>
                   <button
-                    onClick={() => handleApprove(u.id, 'REJECTED')}
-                    className="bg-red-600 hover:bg-red-700 text-white px-3.5 py-2 text-xs font-bold rounded flex items-center gap-1 cursor-pointer"
+                    onClick={() => handleApprove(u.id, 'APPROVED')}
+                    disabled={processingAction}
+                    className="theme-primary-btn px-3.5 py-2 text-xs flex items-center gap-1 cursor-pointer font-bold"
                   >
-                    <XCircle className="w-4 h-4" />
+                    <CheckCircle className="w-3.5 h-3.5" />
+                    Approve
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedApplicant(u);
+                      setIsRejecting(true);
+                      setRejectionReason('');
+                      setShowVerifyModal(true);
+                    }}
+                    disabled={processingAction}
+                    className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 text-xs font-bold rounded flex items-center gap-1 cursor-pointer"
+                  >
+                    <XCircle className="w-3.5 h-3.5" />
                     Reject
                   </button>
                 </div>
@@ -463,6 +534,274 @@ Verified for Supreme Court of India e-Committee Archival Compliance.`;
                 Create Bench Allocation
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Detailed User Verification Dossier Modal */}
+      {showVerifyModal && selectedApplicant && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="theme-card rounded-xl w-full max-w-2xl shadow-2xl overflow-hidden border border-subtle max-h-[90vh] flex flex-col animate-fadeIn">
+            {/* Modal Header */}
+            <div className="p-4 border-b border-subtle theme-elevated flex justify-between items-center shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-lg bg-amber-500/10 text-amber-500 border border-amber-500/30">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-base font-serif font-bold theme-heading flex items-center gap-2">
+                    Judicial Credential Verification Dossier
+                  </h2>
+                  <p className="text-[11px] theme-subtext">
+                    National Judicial Data Grid Verification & Identity Scrutiny
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="badge-pending px-2.5 py-1 text-[10px] font-bold rounded uppercase">
+                  {selectedApplicant.role}
+                </span>
+                <button
+                  onClick={() => {
+                    setShowVerifyModal(false);
+                    setSelectedApplicant(null);
+                    setIsRejecting(false);
+                  }}
+                  className="theme-subtext hover:theme-heading p-1 rounded hover:bg-white/5 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Content */}
+            <div className="overflow-y-auto p-5 space-y-5 text-xs">
+              {actionError && (
+                <div className="p-3 theme-elevated border border-red-500/50 text-red-500 rounded flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  <span>{actionError}</span>
+                </div>
+              )}
+
+              {/* Section 1: Applicant Profile */}
+              <div className="p-4 theme-elevated border border-subtle rounded-lg space-y-3">
+                <div className="flex items-center gap-2 text-xs font-bold theme-heading border-b border-subtle pb-2">
+                  <User className="w-4 h-4 text-amber-500" />
+                  <span>1. Applicant Personal & Account Identity</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <span className="theme-subtext text-[10px] uppercase font-bold">Full Legal Name</span>
+                    <p className="theme-heading font-serif font-bold text-sm mt-0.5">{selectedApplicant.name}</p>
+                  </div>
+                  <div>
+                    <span className="theme-subtext text-[10px] uppercase font-bold">Official Email Address</span>
+                    <p className="theme-heading font-mono text-xs mt-0.5">{selectedApplicant.email}</p>
+                  </div>
+                  <div>
+                    <span className="theme-subtext text-[10px] uppercase font-bold">System User ID</span>
+                    <p className="theme-subtext font-mono text-[10px] mt-0.5 break-all">{selectedApplicant.id}</p>
+                  </div>
+                  <div>
+                    <span className="theme-subtext text-[10px] uppercase font-bold">Registration Timestamp</span>
+                    <p className="theme-heading text-xs mt-0.5">
+                      {selectedApplicant.createdAt ? new Date(selectedApplicant.createdAt).toLocaleString() : 'Recent Submission'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 2: Judicial & Professional Credentials */}
+              <div className="p-4 theme-elevated border border-subtle rounded-lg space-y-3">
+                <div className="flex items-center gap-2 text-xs font-bold theme-heading border-b border-subtle pb-2">
+                  <Building className="w-4 h-4 text-amber-500" />
+                  <span>2. Professional Jurisdiction & Designation</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <span className="theme-subtext text-[10px] uppercase font-bold">Requested Authority Role</span>
+                    <p className="text-amber-500 font-bold uppercase text-xs mt-0.5">{selectedApplicant.role}</p>
+                  </div>
+                  <div>
+                    <span className="theme-subtext text-[10px] uppercase font-bold">Official Designation</span>
+                    <p className="theme-heading font-semibold text-xs mt-0.5">{selectedApplicant.designation || 'Not specified'}</p>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <span className="theme-subtext text-[10px] uppercase font-bold">Attached Court Bench / Jurisdiction</span>
+                    <p className="theme-heading font-semibold text-xs mt-0.5">{selectedApplicant.court || 'State Judiciary'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 3: Official Identity ID with Show/Mask Toggle */}
+              <div className="p-4 theme-elevated border border-subtle rounded-lg space-y-3">
+                <div className="flex items-center justify-between border-b border-subtle pb-2">
+                  <div className="flex items-center gap-2 text-xs font-bold theme-heading">
+                    <ShieldAlert className="w-4 h-4 text-blue-500" />
+                    <span>3. Official Bar / Judicial Service Credential</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowOfficialId(!showOfficialId)}
+                    className="theme-secondary-btn px-2.5 py-1 text-[11px] flex items-center gap-1.5 cursor-pointer"
+                  >
+                    {showOfficialId ? (
+                      <>
+                        <EyeOff className="w-3.5 h-3.5" />
+                        <span>Mask ID</span>
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="w-3.5 h-3.5 text-blue-500" />
+                        <span>Reveal Full ID</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                <div className="p-3 bg-black/40 border border-subtle rounded font-mono flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] uppercase text-slate-400 font-bold block mb-1">
+                      Submitted Credential Identifier:
+                    </span>
+                    <span className="text-sm font-bold text-cyan-400">
+                      {showOfficialId
+                        ? (selectedApplicant.officialId || 'N/A')
+                        : (selectedApplicant.officialIdMasked || selectedApplicant.officialId || 'N/A')}
+                    </span>
+                  </div>
+                  <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                    AES-256 Encrypted
+                  </span>
+                </div>
+
+                <p className="text-[10px] theme-subtext flex items-center gap-1.5">
+                  <Lock className="w-3 h-3 text-amber-500 shrink-0" />
+                  <span>
+                    Official credentials are encrypted at rest with AES-256-GCM and verified against State Bar / Judicial rosters.
+                  </span>
+                </p>
+              </div>
+
+              {/* Section 4: Rejection Reason Input (Conditional) */}
+              {isRejecting && (
+                <div className="p-4 bg-red-950/20 border border-red-500/40 rounded-lg space-y-3 animate-fadeIn">
+                  <div className="flex items-center gap-2 text-xs font-bold text-red-400 border-b border-red-500/20 pb-2">
+                    <AlertCircle className="w-4 h-4" />
+                    <span>Provide Official Rejection Reason</span>
+                  </div>
+                  <p className="text-[11px] theme-subtext">
+                    Specify the justification for rejecting this application. This rationale will be logged in the permanent audit record and shown to the applicant upon login.
+                  </p>
+
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] font-bold uppercase theme-subtext">Quick Presets:</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[
+                        'Invalid Bar Registration Number',
+                        'Incomplete Judicial Service Credentials',
+                        'Jurisdiction & Bench Mismatch',
+                        'Unverified Official Email Domain',
+                        'Duplicate Registration Record',
+                      ].map((preset) => (
+                        <button
+                          key={preset}
+                          type="button"
+                          onClick={() => setRejectionReason(preset)}
+                          className={`px-2 py-1 rounded text-[10px] border transition-colors cursor-pointer ${
+                            rejectionReason === preset
+                              ? 'bg-red-600 text-white border-red-500'
+                              : 'theme-elevated border-subtle theme-subtext hover:theme-heading'
+                          }`}
+                        >
+                          {preset}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase theme-subtext mb-1">
+                      Detailed Rejection Rationale:
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={rejectionReason}
+                      onChange={(e) => setRejectionReason(e.target.value)}
+                      placeholder="Enter specific verification deficiency or rationale..."
+                      className="w-full px-3 py-2 text-xs rounded border border-subtle bg-black/30 theme-heading"
+                    />
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setIsRejecting(false)}
+                      className="theme-secondary-btn px-3 py-1.5 text-xs cursor-pointer"
+                    >
+                      Back to Dossier
+                    </button>
+                    <button
+                      type="button"
+                      disabled={processingAction || !rejectionReason.trim()}
+                      onClick={() => handleApprove(selectedApplicant.id, 'REJECTED', rejectionReason)}
+                      className="bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white px-4 py-1.5 text-xs font-bold rounded flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <XCircle className="w-4 h-4" />
+                      <span>{processingAction ? 'Enforcing...' : 'Enforce Official Rejection'}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Actions */}
+            {!isRejecting && (
+              <div className="p-4 border-t border-subtle theme-elevated flex flex-col sm:flex-row justify-between items-center gap-3 shrink-0">
+                <div className="text-[11px] theme-subtext">
+                  Status: <strong className="text-amber-500">Awaiting Administrator Decision</strong>
+                </div>
+
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowVerifyModal(false);
+                      setSelectedApplicant(null);
+                    }}
+                    className="theme-secondary-btn px-3.5 py-2 text-xs cursor-pointer"
+                  >
+                    Close
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={processingAction}
+                    onClick={() => {
+                      setIsRejecting(true);
+                      setRejectionReason('Invalid Bar Registration Number');
+                    }}
+                    className="bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white px-3.5 py-2 text-xs font-bold rounded flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <XCircle className="w-4 h-4" />
+                    <span>Reject Application</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={processingAction}
+                    onClick={() => handleApprove(selectedApplicant.id, 'APPROVED')}
+                    className="theme-primary-btn px-4 py-2 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <CheckCircle className="w-4 h-4" />
+                    <span>{processingAction ? 'Authorizing...' : 'Approve & Grant Official Access'}</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

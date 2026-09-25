@@ -1,9 +1,28 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authenticateToken, requireRole, AuthRequest } from '../middleware/auth.js';
+import { decryptField } from '../utils/fieldEncryption.js';
 
 const router = Router();
 const prisma = new PrismaClient();
+
+// Helper function to mask official identity numbers for sensitive review
+export function maskOfficialId(id: string | null | undefined): string {
+  if (!id || id === 'N/A') return 'N/A';
+  const parts = id.split('/');
+  if (parts.length >= 3) {
+    if (parts.length === 4) {
+      return `${parts[0]}/${parts[1]}/****/${parts[3]}`;
+    }
+    if (parts.length === 3) {
+      return `${parts[0]}/****/${parts[2]}`;
+    }
+  }
+  if (id.length <= 6) {
+    return id.length > 2 ? id.slice(0, 1) + '*'.repeat(id.length - 2) + id.slice(-1) : '***';
+  }
+  return id.slice(0, 3) + '****' + id.slice(-3);
+}
 
 // Helper function to check if time slots overlap
 function isTimeOverlapping(start1: string, end1: string, start2: string, end2: string): boolean {
@@ -94,35 +113,120 @@ router.get('/pending-users', authenticateToken, requireRole(['ADMIN']), async (r
         court: true,
         officialId: true,
         status: true,
+        rejectionReason: true,
         createdAt: true,
+        updatedAt: true,
       },
       orderBy: { createdAt: 'desc' }
     });
-    return res.json({ success: true, pendingUsers });
+
+    const decryptedList = pendingUsers.map((u) => {
+      const decryptedOfficialId = decryptField(u.officialId) || 'N/A';
+      return {
+        ...u,
+        officialId: decryptedOfficialId,
+        officialIdMasked: maskOfficialId(decryptedOfficialId),
+      };
+    });
+
+    return res.json({ success: true, pendingUsers: decryptedList });
   } catch (error) {
     console.error('Failed to fetch pending users:', error);
     return res.status(500).json({ error: 'Failed to fetch pending users' });
   }
 });
 
-// POST /api/admin/approve-user — Approve or reject pending user registration
-router.post('/approve-user', authenticateToken, requireRole(['ADMIN']), async (req: AuthRequest, res: Response) => {
+// GET /api/admin/pending-users/:id — Detailed applicant verification view for admin
+router.get('/pending-users/:id', authenticateToken, requireRole(['ADMIN']), async (req: AuthRequest, res: Response) => {
   try {
-    const { userId, status } = req.body;
-    if (!userId || !status) {
-      return res.status(400).json({ error: 'userId and status are required' });
-    }
-
-    const validStatus = status.toUpperCase();
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: { status: validStatus === 'APPROVED' ? 'APPROVED' : 'REJECTED' },
+    const { id } = req.params;
+    const user = await prisma.user.findUnique({
+      where: { id },
       select: {
         id: true,
         name: true,
         email: true,
         role: true,
-        status: true
+        designation: true,
+        court: true,
+        officialId: true,
+        status: true,
+        rejectionReason: true,
+        createdAt: true,
+        updatedAt: true,
+      }
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'Applicant registration record not found' });
+    }
+
+    const decryptedOfficialId = decryptField(user.officialId) || 'N/A';
+
+    return res.json({
+      success: true,
+      applicant: {
+        ...user,
+        officialId: decryptedOfficialId,
+        officialIdMasked: maskOfficialId(decryptedOfficialId),
+      }
+    });
+  } catch (error: any) {
+    console.error('Failed to fetch applicant details:', error);
+    return res.status(500).json({ error: 'Failed to fetch applicant verification details', details: error.message });
+  }
+});
+
+// POST /api/admin/approve-user — Approve or reject pending user registration
+router.post('/approve-user', authenticateToken, requireRole(['ADMIN']), async (req: AuthRequest, res: Response) => {
+  try {
+    const { userId, status, rejectionReason, role } = req.body;
+    if (!userId || !status) {
+      return res.status(400).json({ error: 'userId and status are required' });
+    }
+
+    const validStatus = String(status).toUpperCase();
+    if (!['APPROVED', 'REJECTED'].includes(validStatus)) {
+      return res.status(400).json({ error: 'Invalid status. Status must be APPROVED or REJECTED.' });
+    }
+
+    const targetUser = await prisma.user.findUnique({
+      where: { id: userId }
+    });
+
+    if (!targetUser) {
+      return res.status(404).json({ error: 'Applicant user not found' });
+    }
+
+    if (validStatus === 'APPROVED' && targetUser.status === 'APPROVED') {
+      return res.status(400).json({ error: 'User registration has already been approved' });
+    }
+
+    if (validStatus === 'REJECTED' && targetUser.status === 'REJECTED') {
+      return res.status(400).json({ error: 'User registration has already been rejected' });
+    }
+
+    const finalRejectionReason = validStatus === 'REJECTED'
+      ? (rejectionReason && String(rejectionReason).trim() ? String(rejectionReason).trim() : 'Credentials could not be verified by Judicial Administrator')
+      : null;
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        status: validStatus,
+        rejectionReason: finalRejectionReason,
+        ...(role ? { role: String(role).toUpperCase() } : {})
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        designation: true,
+        court: true,
+        status: true,
+        rejectionReason: true,
+        updatedAt: true,
       }
     });
 
@@ -131,9 +235,11 @@ router.post('/approve-user', authenticateToken, requireRole(['ADMIN']), async (r
         data: {
           actorId: req.user.id,
           actorRole: req.user.role,
-          action: `USER_${validStatus}`,
-          input: `Action on User ID ${userId} (${updatedUser.name})`,
-          output: `Status set to ${updatedUser.status}`,
+          action: validStatus === 'APPROVED' ? 'USER_APPROVED' : 'USER_REJECTED',
+          input: `Admin verification for User ID ${userId} (${updatedUser.name}, ${updatedUser.role})`,
+          output: validStatus === 'APPROVED'
+            ? `Status updated to APPROVED by ${req.user.name}`
+            : `Status updated to REJECTED. Reason: ${finalRejectionReason}`,
           outcome: 'SUCCESS'
         }
       });

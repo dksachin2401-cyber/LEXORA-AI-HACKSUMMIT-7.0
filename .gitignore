@@ -38,6 +38,7 @@ build/
 *.log
 npm-debug.log*
 backups/
+scratch/
 
 # Operating System Files
 .DS_Store

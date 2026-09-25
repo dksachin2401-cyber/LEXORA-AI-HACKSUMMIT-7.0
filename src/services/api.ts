@@ -74,10 +74,13 @@ export const api = {
 
   getPendingUsers: () => request<{ success: boolean; pendingUsers: any[] }>('/admin/pending-users'),
 
-  approveUser: (userId: string, status: string) =>
+  getApplicantDetails: (userId: string) =>
+    request<{ success: boolean; applicant: any }>(`/admin/pending-users/${userId}`),
+
+  approveUser: (userId: string, status: string, rejectionReason?: string, role?: string) =>
     request<{ success: boolean; user: any }>('/admin/approve-user', {
       method: 'POST',
-      body: JSON.stringify({ userId, status }),
+      body: JSON.stringify({ userId, status, rejectionReason, role }),
     }),
 
   // Cases

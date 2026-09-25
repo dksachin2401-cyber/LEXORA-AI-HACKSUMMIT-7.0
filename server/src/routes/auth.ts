@@ -182,15 +182,18 @@ router.post('/login', async (req: Request, res: Response) => {
     }
 
     // Check Account Status
-    if (user.status === 'PENDING_ADMIN_APPROVAL') {
+    if (user.status === 'PENDING' || user.status === 'PENDING_ADMIN_APPROVAL') {
       return res.status(403).json({
         error: 'Account pending verification by National Judicial Administrator. Access denied until official credential verification.'
       });
     }
 
     if (user.status === 'REJECTED') {
+      const reasonMsg = user.rejectionReason
+        ? `Official registration request was rejected by Judicial Administrator. Reason: ${user.rejectionReason}`
+        : 'Official registration request was rejected by Judicial Administrator.';
       return res.status(403).json({
-        error: 'Official registration request was rejected by Judicial Administrator.'
+        error: reasonMsg
       });
     }
 

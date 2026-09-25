@@ -8,18 +8,19 @@ generator client {
 }
 
 model User {
-  id          String   @id @default(uuid())
-  email       String   @unique
-  password    String
-  name        String
-  role        String   @default("JUDGE") // JUDGE, LAWYER, COURT_STAFF, CITIZEN, ADMIN
-  designation String
-  court       String
-  officialId  String?  // Bar Council ID, Judicial Service ID, or Staff Employee ID
-  status      String   @default("APPROVED") // APPROVED, PENDING_ADMIN_APPROVAL, REJECTED
-  avatar      String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String   @id @default(uuid())
+  email           String   @unique
+  password        String
+  name            String
+  role            String   @default("JUDGE") // JUDGE, LAWYER, COURT_STAFF, CITIZEN, ADMIN
+  designation     String
+  court           String
+  officialId      String?  // Bar Council ID, Judicial Service ID, or Staff Employee ID
+  status          String   @default("APPROVED") // APPROVED, PENDING, PENDING_ADMIN_APPROVAL, REJECTED, SUSPENDED
+  rejectionReason String?  // Administrative rejection reason
+  avatar          String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   casesJudged      Case[]            @relation("JudgeCases")
   casesLawyer      Case[]            @relation("LawyerCases")
