@@ -780,6 +780,24 @@ def unified_legal_chat(
             "why_this_answer": {"question_mode": mode, "retrieved_statutes": 0, "retrieved_judgments": 0, "primary_authority_level": 1, "currentness": "VERIFIED"}
         }
 
+    # Prompt injection and adversarial instruction neutralization
+    if re.search(r"ignore\s+(all\s+)?(previous\s+)?(system\s+)?instructions|override\s+case|print\s+all\s+(database\s+)?secrets|bypass\s+security", q_clean, re.IGNORECASE):
+        return {
+            "answer": "LEXORA is designed strictly for authoritative Indian legal research and document analysis under statutory law. I cannot execute non-legal administrative overrides, bypass system isolation, or reveal internal configuration data. If you have a legitimate legal inquiry under Indian law, please provide the case context or statutory section.",
+            "mode": mode,
+            "grounded": True,
+            "evidence_status": "SECURITY_NEUTRALIZED",
+            "currentness": "VERIFIED",
+            "sources": [],
+            "related_cases": [],
+            "warnings": ["Adversarial prompt injection pattern neutralized."],
+            "jurisdiction": "Republic of India (Supreme Court / High Courts)",
+            "simple_explanation": "Adversarial command neutralized.",
+            "false_premise_detected": True,
+            "false_premise_reason": "Query contains an adversarial instruction override attempt.",
+            "why_this_answer": {"question_mode": mode, "retrieved_statutes": 0, "retrieved_judgments": 0, "primary_authority_level": 1, "currentness": "VERIFIED"}
+        }
+
     # 1. Expand query for vector search
     expanded_queries = expand_legal_query(q_clean)
     primary_search_term = expanded_queries[0]
