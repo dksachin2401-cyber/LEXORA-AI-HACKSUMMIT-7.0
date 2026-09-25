@@ -295,8 +295,8 @@ router.put('/users/:id/status', authenticateToken, requireRole(['ADMIN']), async
   }
 });
 
-// POST /api/admin/allocations — Create new bench allocation with conflict detection
-router.post('/allocations', authenticateToken, requireRole(['ADMIN']), async (req: AuthRequest, res: Response) => {
+// POST /api/admin/allocations & /bench-allocations — Create new bench allocation with conflict detection
+const createAllocationHandler = async (req: AuthRequest, res: Response) => {
   try {
     const { judgeId, courtroom, date, startTime, endTime, division } = req.body;
 
@@ -304,6 +304,15 @@ router.post('/allocations', authenticateToken, requireRole(['ADMIN']), async (re
       return res.status(400).json({
         error: 'Validation Error',
         message: 'judgeId, courtroom, date, startTime, and endTime are required fields.'
+      });
+    }
+
+    // ── Past Date Validation ────
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (date < todayStr) {
+      return res.status(400).json({
+        error: 'Invalid Date',
+        message: 'Cannot create a bench allocation for a past date. Please select today or a future date.'
       });
     }
 
@@ -381,10 +390,13 @@ router.post('/allocations', authenticateToken, requireRole(['ADMIN']), async (re
     console.error('Failed to create allocation:', error);
     return res.status(500).json({ error: 'Failed to create bench allocation' });
   }
-});
+};
 
-// PUT /api/admin/allocations/:id — Update bench allocation status or details
-router.put('/allocations/:id', authenticateToken, requireRole(['ADMIN']), async (req: AuthRequest, res: Response) => {
+router.post('/allocations', authenticateToken, requireRole(['ADMIN', 'JUDGE', 'COURT_STAFF', 'STAFF']), createAllocationHandler);
+router.post('/bench-allocations', authenticateToken, requireRole(['ADMIN', 'JUDGE', 'COURT_STAFF', 'STAFF']), createAllocationHandler);
+
+// PUT /api/admin/allocations/:id & /bench-allocations/:id — Update bench allocation status or details
+const updateAllocationHandler = async (req: AuthRequest, res: Response) => {
   try {
     const id = String(req.params.id);
     const { courtroom, date, startTime, endTime, division, status } = req.body;
@@ -411,10 +423,13 @@ router.put('/allocations/:id', authenticateToken, requireRole(['ADMIN']), async 
   } catch (error) {
     return res.status(500).json({ error: 'Failed to update bench allocation' });
   }
-});
+};
 
-// DELETE /api/admin/allocations/:id — Delete bench allocation
-router.delete('/allocations/:id', authenticateToken, requireRole(['ADMIN']), async (req: AuthRequest, res: Response) => {
+router.put('/allocations/:id', authenticateToken, requireRole(['ADMIN', 'JUDGE', 'COURT_STAFF', 'STAFF']), updateAllocationHandler);
+router.put('/bench-allocations/:id', authenticateToken, requireRole(['ADMIN', 'JUDGE', 'COURT_STAFF', 'STAFF']), updateAllocationHandler);
+
+// DELETE /api/admin/allocations/:id & /bench-allocations/:id — Delete bench allocation
+const deleteAllocationHandler = async (req: AuthRequest, res: Response) => {
   try {
     const id = String(req.params.id);
     await prisma.benchAllocation.delete({ where: { id } });
@@ -422,7 +437,10 @@ router.delete('/allocations/:id', authenticateToken, requireRole(['ADMIN']), asy
   } catch (error) {
     return res.status(500).json({ error: 'Failed to delete bench allocation' });
   }
-});
+};
+
+router.delete('/allocations/:id', authenticateToken, requireRole(['ADMIN', 'JUDGE', 'COURT_STAFF', 'STAFF']), deleteAllocationHandler);
+router.delete('/bench-allocations/:id', authenticateToken, requireRole(['ADMIN', 'JUDGE', 'COURT_STAFF', 'STAFF']), deleteAllocationHandler);
 
 // POST /api/admin/demo-reset — Safe Deterministic Demo Environment Reset
 router.post('/demo-reset', authenticateToken, requireRole(['ADMIN']), async (req: AuthRequest, res: Response) => {
