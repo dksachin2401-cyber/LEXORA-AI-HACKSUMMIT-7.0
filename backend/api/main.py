@@ -4,6 +4,22 @@ import time
 import logging
 import uuid
 from contextlib import asynccontextmanager
+
+# Load environment configuration
+try:
+    from dotenv import load_dotenv
+    for _env_file in [
+        os.path.join(os.path.dirname(__file__), ".env"),
+        os.path.join(os.path.dirname(__file__), "..", "..", "server", ".env"),
+        os.path.join(os.path.dirname(__file__), "..", "..", ".env"),
+        ".env",
+        "server/.env"
+    ]:
+        if os.path.exists(_env_file):
+            load_dotenv(os.path.abspath(_env_file), override=False)
+except Exception:
+    pass
+
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Body, Header, Depends, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -569,7 +585,8 @@ def post_deep_research(req: ResearchRequest):
         research_depth=req.research_depth or "STANDARD",
         case_id=req.case_id,
         user_role=req.user_role or "CITIZEN",
-        conversation_history=req.conversation_history
+        conversation_history=req.conversation_history,
+        provider=req.provider or req.model
     )
     return result
 

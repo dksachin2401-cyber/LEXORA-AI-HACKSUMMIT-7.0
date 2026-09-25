@@ -52,7 +52,8 @@ def execute_deep_legal_research(
     research_depth: str = "STANDARD",
     case_id: Optional[str] = None,
     user_role: str = "CITIZEN",
-    conversation_history: Optional[List[Dict[str, Any]]] = None
+    conversation_history: Optional[List[Dict[str, Any]]] = None,
+    provider: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Executes Phase 9 Deep Legal Research Pipeline.
@@ -128,7 +129,7 @@ def execute_deep_legal_research(
         evidence_text=evidence_text
     )
 
-    raw_answer = call_llm(prompt, temperature=0.0)
+    raw_answer = call_llm(prompt, temperature=0.0, max_tokens=1200, provider=provider)
 
     # Step 7: Fallback Synthesis if LLM returns empty or offline
     if not raw_answer:

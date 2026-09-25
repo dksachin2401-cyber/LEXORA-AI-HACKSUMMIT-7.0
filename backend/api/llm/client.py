@@ -1,80 +1,119 @@
 import os
 import json
 import re
+import logging
 from typing import Dict, Any, List, Optional
 
-# Try importing OpenAI client
-try:
-    from openai import OpenAI
-    openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY", "")) if os.getenv("OPENAI_API_KEY") else None
-except Exception:
-    openai_client = None
+logger = logging.getLogger("lexora.llm")
 
-# Try importing Gemini
+# Automatically load .env files if present (without overriding existing environment)
 try:
-    import google.generativeai as genai
-    if os.getenv("GEMINI_API_KEY"):
-        genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-        gemini_model = genai.GenerativeModel('gemini-1.5-flash')
-    else:
-        gemini_model = None
+    from dotenv import load_dotenv
+    for env_path in [
+        os.path.join(os.path.dirname(__file__), "..", ".env"),
+        os.path.join(os.path.dirname(__file__), "..", "..", "server", ".env"),
+        os.path.join(os.path.dirname(__file__), "..", "..", ".env"),
+        ".env",
+        "server/.env"
+    ]:
+        if os.path.exists(env_path):
+            load_dotenv(os.path.abspath(env_path), override=False)
 except Exception:
-    gemini_model = None
+    pass
+
+_openai_client = None
+_gemini_configured = False
+_gemini_model = None
+
+def get_openai_client():
+    global _openai_client
+    api_key = os.getenv("OPENAI_API_KEY", "").strip()
+    if not api_key or api_key.startswith("your_") or api_key.startswith("REPLACE_"):
+        return None
+    try:
+        from openai import OpenAI
+        if _openai_client is None:
+            _openai_client = OpenAI(api_key=api_key)
+        return _openai_client
+    except Exception as e:
+        logger.warning(f"[LLM] Could not initialize OpenAI client: {e}")
+        return None
+
+def get_gemini_model():
+    global _gemini_configured, _gemini_model
+    api_key = os.getenv("GEMINI_API_KEY", "").strip()
+    if not api_key or api_key.startswith("your_") or api_key.startswith("REPLACE_"):
+        return None
+    try:
+        import google.generativeai as genai
+        if not _gemini_configured or _gemini_model is None:
+            genai.configure(api_key=api_key)
+            _gemini_configured = True
+            for model_candidate in ['gemini-3.8-flash', 'gemini-flash-latest', 'gemini-2.5-flash', 'gemini-1.5-flash']:
+                try:
+                    _gemini_model = genai.GenerativeModel(model_candidate)
+                    break
+                except Exception:
+                    continue
+        return _gemini_model
+    except Exception as e:
+        logger.warning(f"[LLM] Could not initialize Gemini model: {e}")
+        return None
 
 SHORT_DOC_THRESHOLD = 6000  # Characters (~1,500 tokens). Long docs > 6000 trigger Map-Reduce.
 
 def call_llm(prompt: str, temperature: float = 0.0, max_tokens: int = 350, provider: Optional[str] = None) -> Optional[str]:
     """
-    Executes LLM request via OpenAI (gpt-4o-mini) or Gemini 1.5 Flash, with zero-temperature determinism.
-    Honors provider parameter or LLM_PROVIDER environment variable ('openai' or 'gemini').
+    Executes LLM request via OpenAI (gpt-4o-mini) or Gemini (gemini-1.5-flash), with zero-temperature determinism.
+    Honors provider parameter, AI_PROVIDER, or LLM_PROVIDER environment variable ('openai' or 'gemini').
+    Implements controlled fallback: Primary Provider -> Secondary Provider -> Safe Fallback.
+    Never exposes API keys or secrets in logs or exceptions.
     """
-    prov = (provider or os.getenv("LLM_PROVIDER", "")).lower().strip()
+    configured_provider = (provider or os.getenv("AI_PROVIDER") or os.getenv("LLM_PROVIDER") or "").lower().strip()
 
-    # 1. Specified provider preference
-    if prov in ["gemini", "google"] and gemini_model:
-        try:
-            response = gemini_model.generate_content(
-                prompt,
-                generation_config={"temperature": temperature, "max_output_tokens": max_tokens}
-            )
-            return response.text.strip()
-        except Exception as e:
-            print(f"[LLM] Specified Gemini call failed: {e}")
+    if configured_provider in ["gemini", "google"]:
+        provider_chain = ["gemini", "openai"]
+    elif configured_provider in ["openai", "gpt", "gpt-4o", "gpt-4o-mini"]:
+        provider_chain = ["openai", "gemini"]
+    else:
+        if os.getenv("GEMINI_API_KEY") and not os.getenv("GEMINI_API_KEY").startswith("your_") and not os.getenv("OPENAI_API_KEY"):
+            provider_chain = ["gemini", "openai"]
+        else:
+            provider_chain = ["openai", "gemini"]
 
-    if prov in ["openai", "gpt", "gpt-4o", "gpt-4o-mini"] and openai_client:
-        try:
-            response = openai_client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[{"role": "user", "content": prompt}],
-                temperature=temperature,
-                max_tokens=max_tokens
-            )
-            return response.choices[0].message.content.strip()
-        except Exception as e:
-            print(f"[LLM] Specified OpenAI call failed: {e}")
+    for prov in provider_chain:
+        if prov == "openai":
+            client = get_openai_client()
+            if client:
+                try:
+                    logger.info("[LLM] Calling OpenAI (gpt-4o-mini)...")
+                    response = client.chat.completions.create(
+                        model="gpt-4o-mini",
+                        messages=[{"role": "user", "content": prompt}],
+                        temperature=temperature,
+                        max_tokens=max_tokens
+                    )
+                    content = response.choices[0].message.content
+                    if content and content.strip():
+                        return content.strip()
+                except Exception as e:
+                    err_msg = str(e).split("api_key")[0] if "api_key" in str(e) else str(e)
+                    logger.warning(f"[LLM] OpenAI call failed: {err_msg}. Attempting fallback...")
 
-    # 2. Default fallback order if provider unconfigured or failed
-    if openai_client:
-        try:
-            response = openai_client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[{"role": "user", "content": prompt}],
-                temperature=temperature,
-                max_tokens=max_tokens
-            )
-            return response.choices[0].message.content.strip()
-        except Exception as e:
-            print(f"[LLM] OpenAI call failed: {e}")
-
-    if gemini_model:
-        try:
-            response = gemini_model.generate_content(
-                prompt,
-                generation_config={"temperature": temperature, "max_output_tokens": max_tokens}
-            )
-            return response.text.strip()
-        except Exception as e:
-            print(f"[LLM] Gemini call failed: {e}")
+        elif prov == "gemini":
+            model = get_gemini_model()
+            if model:
+                try:
+                    logger.info("[LLM] Calling Gemini (gemini-1.5-flash)...")
+                    response = model.generate_content(
+                        prompt,
+                        generation_config={"temperature": temperature, "max_output_tokens": max_tokens}
+                    )
+                    if response and response.text and response.text.strip():
+                        return response.text.strip()
+                except Exception as e:
+                    err_msg = str(e).split("api_key")[0] if "api_key" in str(e) else str(e)
+                    logger.warning(f"[LLM] Gemini call failed: {err_msg}. Attempting fallback...")
 
     return None
 
