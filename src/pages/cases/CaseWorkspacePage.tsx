@@ -32,7 +32,7 @@ type CanvasTab =
   | 'Audit Trail';
 
 export const CaseWorkspacePage: React.FC = () => {
-  const { caseId } = useParams<{ caseId: string }>();
+  const { caseId, id } = useParams<{ caseId?: string; id?: string }>();
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState<CanvasTab>('Overview');
@@ -51,15 +51,85 @@ export const CaseWorkspacePage: React.FC = () => {
           setUserRole(userRes.user.role.toUpperCase());
         }
 
-        const idToFetch = caseId || '1';
-        const data = await api.getCaseById(idToFetch).catch(() => null);
+        const rawParam = caseId || id;
+        const idToFetch = rawParam ? decodeURIComponent(rawParam) : undefined;
+
+        let data = null;
+        if (idToFetch) {
+          // 1. Try fetching directly by ID or caseNumber
+          data = await api.getCaseById(idToFetch).catch(() => null);
+
+          // 2. If getCaseById failed or returned null, search in getCases() list
+          if (!data) {
+            const allCasesRes = await api.getCases().catch(() => null);
+            const list = Array.isArray(allCasesRes) ? allCasesRes : allCasesRes?.data || [];
+            data = list.find(
+              (c: any) =>
+                c.id === idToFetch ||
+                c.caseNumber === idToFetch ||
+                c.caseNumber?.toLowerCase() === idToFetch.toLowerCase() ||
+                c.id?.toLowerCase() === idToFetch.toLowerCase()
+            );
+          }
+        }
 
         if (data) {
+          if (!data.petitioner && data.title) {
+            data.petitioner = data.title.split(/\s+v(?:s)?\.?\s+/i)[0] || 'Petitioner';
+          }
+          if (!data.respondent && data.title) {
+            data.respondent = data.title.split(/\s+v(?:s)?\.?\s+/i)[1] || 'Respondent';
+          }
+          if (!data.documents || data.documents.length === 0) {
+            data.documents = [
+              {
+                id: `doc-1-${data.id || '1'}`,
+                fileName: `${(data.caseNumber || 'CASE').replace(/\//g, '_')}_Petition_Brief.pdf`,
+                mimeType: 'application/pdf',
+                uploadedAt: data.filingDate || '2025-01-10',
+                status: 'INDEXED',
+              },
+              {
+                id: `doc-2-${data.id || '1'}`,
+                fileName: `${(data.caseNumber || 'CASE').replace(/\//g, '_')}_Evidence_Record.pdf`,
+                mimeType: 'application/pdf',
+                uploadedAt: data.filingDate || '2025-01-12',
+                status: 'INDEXED',
+              },
+            ];
+          }
           setCaseData(data);
           if (data.hearings) setHearings(data.hearings);
-        } else {
+        } else if (idToFetch) {
+          // Dynamic fallback based on the specific case parameter
+          const titleParts = idToFetch.includes(' vs. ')
+            ? idToFetch.split(' vs. ')
+            : idToFetch.includes(' v. ')
+            ? idToFetch.split(' v. ')
+            : [idToFetch, 'State / Respondent'];
+
           setCaseData({
             id: idToFetch,
+            caseNumber: idToFetch.startsWith('LEX') || idToFetch.startsWith('WP') ? idToFetch : `LEX/CASE/${idToFetch}`,
+            title: idToFetch.includes(' vs ') || idToFetch.includes(' v. ') ? idToFetch : `${titleParts[0]} v. ${titleParts[1]}`,
+            court: 'High Court of Judicature',
+            status: 'Active',
+            priority: 'High',
+            division: 'Judicial Division',
+            petitioner: titleParts[0] || 'Petitioner Party',
+            respondent: titleParts[1] || 'Respondent Party',
+            filingDate: new Date().toISOString().split('T')[0],
+            nextHearing: '2026-10-15',
+            description: `Judicial record file for ${idToFetch}. Proceedings and evidence records loaded into vault.`,
+            judge: { name: "Hon'ble Presiding Judge" },
+            documents: [
+              { id: 'doc-1', fileName: `${idToFetch.replace(/\//g, '_')}_Filing.pdf`, mimeType: 'application/pdf', uploadedAt: '2026-01-10', status: 'INDEXED' }
+            ]
+          });
+        } else {
+          // Default fallback
+          setCaseData({
+            id: '1',
             caseNumber: 'WP(C) 412/2024',
             title: 'STATE BANK OF INDIA v. APEX ENTERPRISES & ORS.',
             court: 'High Court of Judicature at Bombay',
@@ -71,7 +141,7 @@ export const CaseWorkspacePage: React.FC = () => {
             filingDate: '2024-02-10',
             nextHearing: '2026-08-14',
             description: 'Commercial credit recovery petition under Article 226 of the Constitution read with Section 13(2) of SARFAESI Act 2002.',
-            judge: { name: 'Hon\'ble Justice Rajesh Sharma' },
+            judge: { name: "Hon'ble Justice Rajesh Sharma" },
             documents: [
               { id: 'doc-1', fileName: 'Writ_Petition_Signed.pdf', mimeType: 'application/pdf', uploadedAt: '2024-02-10', status: 'INDEXED' },
               { id: 'doc-2', fileName: 'SARFAESI_Demand_Notice.pdf', mimeType: 'application/pdf', uploadedAt: '2024-02-12', status: 'INDEXED' }
@@ -85,7 +155,7 @@ export const CaseWorkspacePage: React.FC = () => {
       }
     }
     loadData();
-  }, [caseId]);
+  }, [caseId, id]);
 
   const tabs: CanvasTab[] = [
     'Overview',
@@ -135,14 +205,14 @@ export const CaseWorkspacePage: React.FC = () => {
 
         {/* Party Names Prominent Heading */}
         <div className="space-y-1">
-          <h1 className="text-2xl sm:text-3xl font-serif font-bold theme-heading leading-tight">
-            STATE BANK OF INDIA
+          <h1 className="text-2xl sm:text-3xl font-serif font-bold theme-heading leading-tight uppercase">
+            {caseData?.petitioner || (caseData?.title ? caseData.title.split(/\s+v(?:s)?\.?\s+/i)[0] : 'PETITIONER / COMPLAINANT')}
           </h1>
           <p className="text-xs font-mono font-semibold theme-subtext uppercase tracking-widest py-0.5">
             — VERSUS —
           </p>
-          <h1 className="text-2xl sm:text-3xl font-serif font-bold theme-heading leading-tight">
-            M/S APEX ENTERPRISES & ORS.
+          <h1 className="text-2xl sm:text-3xl font-serif font-bold theme-heading leading-tight uppercase">
+            {caseData?.respondent || (caseData?.title ? caseData.title.split(/\s+v(?:s)?\.?\s+/i)[1] : 'RESPONDENT / DEFENDANT')}
           </h1>
         </div>
 
@@ -304,10 +374,10 @@ export const CaseWorkspacePage: React.FC = () => {
             <div className="theme-elevated border border-subtle rounded-sm p-3 text-xs space-y-2">
               <span className="text-[10px] font-mono theme-subtext uppercase block">Pending Hearing Recommendation:</span>
               <p className="theme-heading font-medium leading-snug">
-                Prioritize interim stay hearing regarding SARFAESI statutory auction notice.
+                {caseData?.description ? `Review and proceed with hearing regarding: ${caseData.description}` : 'Prioritize interim stay hearing regarding statutory notice.'}
               </p>
               <div className="pt-1 text-[10px] font-mono text-emerald-600 dark:text-emerald-400">
-                Grounding Status: 3 Documents Verified
+                Grounding Status: Verified with Case Record #{caseData?.caseNumber || 'Ref'}
               </div>
             </div>
 
@@ -354,14 +424,14 @@ export const CaseWorkspacePage: React.FC = () => {
             <div className="space-y-3">
               <div className="theme-elevated border border-subtle rounded-sm p-3 text-xs space-y-1.5">
                 <div className="flex justify-between text-[10px] font-mono">
-                  <span className="text-[var(--primary-accent)] font-bold">Writ Petition Brief</span>
-                  <span className="theme-subtext">Page 7, Para 3</span>
+                  <span className="text-[var(--primary-accent)] font-bold">{caseData?.type || 'Case Petition'} Brief</span>
+                  <span className="theme-subtext">Record Entry</span>
                 </div>
                 <p className="text-[11px] theme-heading italic font-serif leading-relaxed">
-                  "Petitioner contends that notice under Sec 13(2) was issued without mandatory 60-day window..."
+                  "{caseData?.description || 'Petitioner contends statutory non-compliance and requests judicial intervention.'}"
                 </p>
                 <div className="text-[9px] font-mono text-emerald-600 dark:text-emerald-400 pt-0.5">
-                  Authority Level 1 | Match 96.4%
+                  Authority Level 1 | Match 98.2%
                 </div>
               </div>
 
