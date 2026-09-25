@@ -8,25 +8,37 @@ function getCsrfToken(): string | null {
 }
 
 export function getAuthToken(): string | null {
-  return null; // Token stored in HttpOnly cookie
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('access_token') || localStorage.getItem('token') || sessionStorage.getItem('access_token') || null;
 }
 
-export function setAuthToken(_token: string) {
-  // Obsolete: Token is stored securely in HttpOnly cookie
+export function setAuthToken(token: string) {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('access_token', token);
+  }
 }
 
 export function removeAuthToken() {
-  // Obsolete: Token cleared via /auth/logout cookie clearing
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('token');
+    sessionStorage.removeItem('access_token');
+  }
 }
 
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const method = (options.method || 'GET').toUpperCase();
   const csrfToken = getCsrfToken();
+  const token = getAuthToken();
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),
   };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
 
   if (csrfToken && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
     headers['X-CSRF-Token'] = csrfToken;
@@ -173,7 +185,7 @@ export const api = {
   getDrafts: () => request<{ success: boolean; drafts: any[] }>('/drafts'),
 
   saveDraft: (data: { caseId: string; docType?: string; title: string; content: string }) =>
-    request<{ success: boolean; draft: any }>('/drafts', {
+    request<{ success: boolean; draft?: any; error?: string; details?: string }>('/drafts', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
