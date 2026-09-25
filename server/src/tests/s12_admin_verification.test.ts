@@ -132,7 +132,7 @@ describe('Phase S12: Admin User Verification & Approval Workflow Security Suite'
     });
 
     test('Rejection requires a valid rationale or falls back to standard administrative notice', () => {
-      const emptyReason = '';
+      const emptyReason: string = '';
       const fallback = (emptyReason && emptyReason.trim()) ? emptyReason.trim() : 'Credentials could not be verified by Judicial Administrator';
       assert.strictEqual(fallback, 'Credentials could not be verified by Judicial Administrator');
     });

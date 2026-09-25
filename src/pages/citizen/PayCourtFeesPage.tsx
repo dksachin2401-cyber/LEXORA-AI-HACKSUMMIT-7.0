@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { CreditCard, CheckCircle, Lock, ShieldCheck, Download, Calculator, Building, Landmark, Smartphone, FileText, ArrowRight, History } from 'lucide-react';
+import { CreditCard, CheckCircle, Lock, ShieldCheck, Download, Calculator, Building, Landmark, Smartphone, FileText, ArrowRight, History, FolderOpen } from 'lucide-react';
+import { api } from '@/services/api';
 
 interface PaymentRecord {
   grn: string;
@@ -14,8 +15,9 @@ interface PaymentRecord {
 }
 
 export const PayCourtFeesPage: React.FC = () => {
-  const [caseNo, setCaseNo] = useState('CIV.SUIT 104/2025');
-  const [cnrNo, setCnrNo] = useState('MHBM010041202026');
+  const [cases, setCases] = useState<any[]>([]);
+  const [caseNo, setCaseNo] = useState('WP/2026/1042');
+  const [cnrNo, setCnrNo] = useState('DLDH010010422026');
   const [feeType, setFeeType] = useState('Ad-Valorem Filing Fee');
   const [suitClaimValue, setSuitClaimValue] = useState('250000');
   const [paymentMethod, setPaymentMethod] = useState('UPI');
@@ -37,7 +39,7 @@ export const PayCourtFeesPage: React.FC = () => {
         grn: 'GRN/2026/MH/8812903',
         receiptNo: 'REC/2026/4109',
         txnId: 'TXN_98412093',
-        caseNo: 'CIV.SUIT 104/2025',
+        caseNo: 'WP/2026/1042',
         feeType: 'Ad-Valorem Filing Fee',
         amount: 5300,
         paymentMethod: 'UPI (citizen@upi)',
@@ -49,6 +51,23 @@ export const PayCourtFeesPage: React.FC = () => {
 
   const [loading, setLoading] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+
+  useEffect(() => {
+    async function loadCases() {
+      try {
+        const res = await api.getCases();
+        const list = Array.isArray(res) ? res : res.data || [];
+        setCases(list);
+        if (list.length > 0) {
+          setCaseNo(list[0].caseNumber);
+          setCnrNo(`DLHC0100${list[0].caseNumber.replace(/[^0-9]/g, '').slice(-6) || '1042'}2026`);
+        }
+      } catch (err) {
+        console.warn('Failed to load cases:', err);
+      }
+    }
+    loadCases();
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('lexora_court_fee_history', JSON.stringify(paymentHistory));
@@ -136,6 +155,32 @@ export const PayCourtFeesPage: React.FC = () => {
                   <Lock className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
                   <span>Secured by e-Courts Portal & State Bank of India e-Treasury Gateway (GRN Integration).</span>
                 </div>
+
+                {cases.length > 0 && (
+                  <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl space-y-1">
+                    <label className="block font-semibold text-blue-700 dark:text-blue-300 flex items-center gap-1.5">
+                      <FolderOpen className="w-3.5 h-3.5" />
+                      Select Registered Case from Court Docket:
+                    </label>
+                    <select
+                      value={caseNo}
+                      onChange={(e) => {
+                        const sel = cases.find(c => c.caseNumber === e.target.value);
+                        setCaseNo(e.target.value);
+                        if (sel) {
+                          setCnrNo(`DLHC0100${sel.caseNumber.replace(/[^0-9]/g, '').slice(-6) || '1042'}2026`);
+                        }
+                      }}
+                      className="w-full px-3 py-2 theme-elevated border border-blue-500/30 rounded-lg theme-heading font-bold cursor-pointer"
+                    >
+                      {cases.map(c => (
+                        <option key={c.id} value={c.caseNumber}>
+                          {c.caseNumber} — {c.title}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>

@@ -139,7 +139,7 @@ router.get('/pending-users', authenticateToken, requireRole(['ADMIN']), async (r
 // GET /api/admin/pending-users/:id — Detailed applicant verification view for admin
 router.get('/pending-users/:id', authenticateToken, requireRole(['ADMIN']), async (req: AuthRequest, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = String(req.params.id);
     const user = await prisma.user.findUnique({
       where: { id },
       select: {

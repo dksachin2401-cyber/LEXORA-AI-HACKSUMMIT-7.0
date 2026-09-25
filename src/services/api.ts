@@ -230,7 +230,10 @@ export const api = {
       body: JSON.stringify({ status }),
     }),
 
-  // Documents Upload
+  // Documents
+  getDocuments: (caseId?: string) =>
+    request<any[]>(`/documents${caseId ? `?caseId=${encodeURIComponent(caseId)}` : ''}`),
+
   uploadDocument: async (file: File, caseId?: string) => {
     const token = getAuthToken();
     const formData = new FormData();
@@ -250,9 +253,44 @@ export const api = {
   getDocumentStatus: (id: string) =>
     request<{ success: boolean; document: any }>(`/documents/${id}/status`),
 
+  // Evidences & Judicial Notes
+  getCaseEvidences: (caseId: string) =>
+    request<{ success: boolean; evidences: any[] }>(`/cases/${encodeURIComponent(caseId)}/evidences`),
+
+  createEvidence: (caseId: string, data: { fileName: string; fileType?: string; category?: string; aiTags?: string[] | string }) =>
+    request<{ success: boolean; evidence: any }>(`/cases/${encodeURIComponent(caseId)}/evidences`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  deleteEvidence: (caseId: string, evidenceId: string) =>
+    request<{ success: boolean; message: string }>(`/cases/${encodeURIComponent(caseId)}/evidences/${encodeURIComponent(evidenceId)}`, {
+      method: 'DELETE',
+    }),
+
+  // Notifications
+  getNotifications: () =>
+    request<{ success: boolean; notifications: any[] }>('/notifications'),
+
+  markNotificationRead: (id: string) =>
+    request<{ success: boolean; notification: any }>(`/notifications/${id}/read`, {
+      method: 'PUT',
+    }),
+
+  markAllNotificationsRead: () =>
+    request<{ success: boolean; message: string }>('/notifications/read-all', {
+      method: 'PUT',
+    }),
+
+  deleteNotification: (id: string) =>
+    request<{ success: boolean; message: string }>(`/notifications/${id}`, {
+      method: 'DELETE',
+    }),
+
   // Audit Logs
   getAuditLogs: () => request<{ success: boolean; logs: any[] }>('/audit'),
 
   // AI & System Health
   getAiHealth: () => request<{ ok: boolean; detail?: string }>('/system/ai-health'),
 };
+

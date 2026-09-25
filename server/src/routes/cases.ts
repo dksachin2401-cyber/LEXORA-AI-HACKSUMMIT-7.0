@@ -353,4 +353,109 @@ router.delete('/:id', authenticateToken, requireRole(['ADMIN', 'JUDGE', 'COURT_S
   }
 });
 
+// ── EVIDENCE CRUD ENDPOINTS ──────────────────────────────────────────────────
+// GET /api/cases/:id/evidences - Retrieve all evidences for a given case
+router.get('/:id/evidences', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const caseId = String(req.params.id);
+    const targetCase = await prisma.case.findFirst({
+      where: { OR: [{ id: caseId }, { caseNumber: caseId }] },
+    });
+
+    if (!targetCase) {
+      return res.status(404).json({ error: 'Case not found' });
+    }
+
+    const access = await canAccessCase(req.user, targetCase, prisma);
+    if (!access.allowed) {
+      return res.status(403).json({ error: access.reason || 'Access denied' });
+    }
+
+    const evidences = await prisma.evidence.findMany({
+      where: { caseId: targetCase.id },
+      orderBy: { uploadedAt: 'desc' },
+    });
+
+    return res.json({ success: true, evidences });
+  } catch (error) {
+    console.error('Fetch evidences error:', error);
+    return res.status(500).json({ error: 'Failed to fetch evidences' });
+  }
+});
+
+// POST /api/cases/:id/evidences - Add a new evidence record or judicial bench note
+router.post('/:id/evidences', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const caseId = String(req.params.id);
+    const targetCase = await prisma.case.findFirst({
+      where: { OR: [{ id: caseId }, { caseNumber: caseId }] },
+    });
+
+    if (!targetCase) {
+      return res.status(404).json({ error: 'Case not found' });
+    }
+
+    const access = await canAccessCase(req.user, targetCase, prisma);
+    if (!access.allowed) {
+      return res.status(403).json({ error: access.reason || 'Access denied' });
+    }
+
+    const { fileName, fileType, category, aiTags } = req.body;
+
+    if (!fileName) {
+      return res.status(400).json({ error: 'Evidence title / fileName is required' });
+    }
+
+    const tagsJson = Array.isArray(aiTags)
+      ? JSON.stringify(aiTags)
+      : typeof aiTags === 'string'
+      ? (aiTags.startsWith('[') ? aiTags : JSON.stringify(aiTags.split(',').map(s => s.trim()).filter(Boolean)))
+      : '[]';
+
+    const evidence = await prisma.evidence.create({
+      data: {
+        caseId: targetCase.id,
+        fileName,
+        fileType: fileType || 'DOCUMENT',
+        category: category || 'Documentary',
+        aiTags: tagsJson,
+      },
+    });
+
+    return res.status(201).json({ success: true, evidence });
+  } catch (error) {
+    console.error('Create evidence error:', error);
+    return res.status(500).json({ error: 'Failed to create evidence' });
+  }
+});
+
+// DELETE /api/cases/:id/evidences/:evidenceId - Delete evidence
+router.delete('/:id/evidences/:evidenceId', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id: caseId, evidenceId } = req.params;
+    const targetCase = await prisma.case.findFirst({
+      where: { OR: [{ id: String(caseId) }, { caseNumber: String(caseId) }] },
+    });
+
+    if (!targetCase) {
+      return res.status(404).json({ error: 'Case not found' });
+    }
+
+    const access = await canAccessCase(req.user, targetCase, prisma);
+    if (!access.allowed) {
+      return res.status(403).json({ error: access.reason || 'Access denied' });
+    }
+
+    await prisma.evidence.delete({
+      where: { id: String(evidenceId) },
+    });
+
+    return res.json({ success: true, message: 'Evidence deleted successfully' });
+  } catch (error) {
+    console.error('Delete evidence error:', error);
+    return res.status(500).json({ error: 'Failed to delete evidence' });
+  }
+});
+
 export default router;
+

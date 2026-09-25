@@ -18,7 +18,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
-import { notifications as initialNotifications } from '@/data/mockData';
+import { api } from '@/services/api';
 
 interface HeaderProps {
   onMenuClick?: () => void;
@@ -30,24 +30,58 @@ export function Header({ onMenuClick }: HeaderProps) {
   const navigate = useNavigate();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
-  const [notificationsList, setNotificationsList] = useState(initialNotifications);
+  const [notificationsList, setNotificationsList] = useState<any[]>([]);
   const notifRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
 
+  const fetchNotifications = async () => {
+    if (!user) return;
+    try {
+      const res = await api.getNotifications();
+      if (res && res.notifications) {
+        setNotificationsList(res.notifications);
+      }
+    } catch (err) {
+      console.warn('Failed to load notifications from server:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 30000); // 30s live poll
+    return () => clearInterval(interval);
+  }, [user]);
+
   const unreadCount = notificationsList.filter((n) => !n.read).length;
 
-  const markAllAsRead = () => {
+  const markAllAsRead = async () => {
     setNotificationsList((prev) => prev.map((n) => ({ ...n, read: true })));
+    try {
+      await api.markAllNotificationsRead();
+    } catch (err) {
+      console.warn('Failed to mark all read:', err);
+    }
   };
 
-  const clearAllNotifications = () => {
+  const clearAllNotifications = async () => {
+    const ids = notificationsList.map((n) => n.id);
     setNotificationsList([]);
+    try {
+      await Promise.all(ids.map((id) => api.deleteNotification(id).catch(() => {})));
+    } catch (err) {
+      console.warn('Failed to clear notifications:', err);
+    }
   };
 
-  const markSingleAsRead = (id: string) => {
+  const markSingleAsRead = async (id: string) => {
     setNotificationsList((prev) =>
       prev.map((n) => (n.id === id ? { ...n, read: true } : n))
     );
+    try {
+      await api.markNotificationRead(id);
+    } catch (err) {
+      console.warn('Failed to mark single read:', err);
+    }
   };
 
   useEffect(() => {
@@ -165,7 +199,9 @@ export function Header({ onMenuClick }: HeaderProps) {
                       >
                         <div className="flex items-center justify-between">
                           <span className="font-semibold">{notif.title}</span>
-                          <span className="text-[10px] font-mono opacity-60">{notif.time}</span>
+                          <span className="text-[10px] font-mono opacity-60">
+                            {notif.time || (notif.createdAt ? new Date(notif.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' ' + new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '')}
+                          </span>
                         </div>
                         <p className="text-[11px] leading-snug theme-subtext">{notif.message}</p>
                       </div>
